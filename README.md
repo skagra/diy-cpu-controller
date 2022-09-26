@@ -1,1 +1,1 @@
-# diy-cpu-component-tester
+# DIY CPU Component Tester
