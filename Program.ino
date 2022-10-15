@@ -2,6 +2,7 @@
 #include "DataBus.h"
 #include "ControlLines.h"
 #include "Controller.h"
+#include "ControllerUtils.h"
 
 #define ALU_OP_ADD 0
 #define ALU_OP_SUB ALU_OP_0
@@ -19,6 +20,7 @@ bool waitForKeyPress = false;
 DataBus *dataBus = new DataBus();
 ControlLines *controlLines = new ControlLines();
 Controller *controller = new Controller(controlLines);
+ControllerUtils *controllerUtils = new ControllerUtils(dataBus, controller);
 
 void setup()
 {
@@ -31,6 +33,8 @@ void setup()
     controlLines->resetControlLines();
 
     delay(100);
+
+    controllerUtils->count(REGISTER_LD);
 }
 
 void menu()
@@ -90,6 +94,8 @@ void step(byte controlLines)
 void loop()
 {
     menu();
+
+    controllerUtils->scan(REGISTER_LD);
 
     // Load 0xFF into the register
     Serial.println("Loading 0xFF into the register");
