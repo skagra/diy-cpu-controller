@@ -100,6 +100,7 @@ void detachDataBus()
 {
     for (int offset = 0; offset < 8; offset++)
     {
+        digitalWrite(BUS_PIN_LOW + offset, LOW);
         pinMode(BUS_PIN_LOW + offset, INPUT);
     }
 }
@@ -253,7 +254,7 @@ void loop()
     step(REGISTER_OUT | ALU_LD_B);
 
     // Add ALUA and ALUB, put the result on the bus and load into the register
-    Serial.println("Add ALUA and ALUB, put the result on the bus and load into the register");
+    Serial.println("Add ALUA and ALUB, put the result on the bus and load it into the register");
     step(ALU_OP_ADD | ALU_OUT | REGISTER_LD);
 
     // Read the result
@@ -262,7 +263,7 @@ void loop()
     Serial.println(result);
 
     // Move the result of the previous calculation into ALUA
-    Serial.println("Moving calculation in the register result into ALUA");
+    Serial.println("Moving calculation result in the register result into ALUA");
     step(REGISTER_OUT | ALU_LD_A);
 
     // Store 22 in ALUB
@@ -275,6 +276,7 @@ void loop()
     step(REGISTER_OUT | ALU_LD_B);
 
     // Subtract ALUA and ALUB, put the result on the bus and load into the register
+    Serial.println("Subtract ALUA and ALUB, put the result on the bus and load it into the register");
     step(ALU_OP_SUB | ALU_OUT | REGISTER_LD);
 
     // Read the result
