@@ -1,6 +1,8 @@
 #include "ControlLines.h"
 #include "Pins.h"
 
+#define NUM_CONTROL_PINS 7
+
 ControlLines::ControlLines()
 {
     for (int controlPin = 0; controlPin < NUM_CONTROL_PINS; controlPin++)
