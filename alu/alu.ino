@@ -26,10 +26,10 @@
 #define NUM_CONTROL_PINS 7
 
 #define CLOCK_PULSE_DELAY_MICROS 100
-#define SLOMO_MILLIS 1000
+#define SLOW_MOTION_MILLIS 1000
 #define MENU_INPUT_TIMEOUT_MILLIS 10000
 
-unsigned int slowmoMillis = 0;
+unsigned int slowMotionMillis = 0;
 bool waitForKeyPress = false;
 
 static int controlBits[] = {10, 11, 14, 15, 16, 17, 18};
@@ -127,7 +127,7 @@ void step(byte controlLines, unsigned int delayMicros = 1)
     pulseClock();
     delayMicroseconds(delayMicros);
 
-    delay(slowmoMillis);
+    delay(slowMotionMillis);
     waitForKey();
 }
 
@@ -148,17 +148,17 @@ void menu()
         case 'r':
             // Defaults are correct
             Serial.println("Normal run mode.");
-            slowmoMillis = 0;
+            slowMotionMillis = 0;
             waitForKeyPress = false;
             break;
         case 'z':
-            Serial.println("Slowmotion mode.");
-            slowmoMillis = SLOMO_MILLIS;
+            Serial.println("Slow motion mode.");
+            slowMotionMillis = SLOW_MOTION_MILLIS;
             waitForKeyPress = false;
             break;
         case 's':
             Serial.println("Single step mode.");
-            slowmoMillis = 0;
+            slowMotionMillis = 0;
             waitForKeyPress = true;
             break;
         default:
