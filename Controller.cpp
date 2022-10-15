@@ -8,7 +8,6 @@ Controller::Controller(ControlLines *controlLines)
     _controlLines = controlLines;
 
     pinMode(CLOCK_PIN, OUTPUT);
-    pinMode(CLOCK_PIN, LOW);
     digitalWrite(CLOCK_PIN, LOW);
 }
 

@@ -104,7 +104,7 @@ void loop()
     dataBus->detachDataBus();
 
     Serial.println("Transferring register into ALUA and ALUB");
-    controller->step(REGISTER_OUT | ALU_LD_A | ALU_LD_B);
+    step(REGISTER_OUT | ALU_LD_A | ALU_LD_B);
 
     // Store 134 in ALUA
     Serial.println("Loading 134 into register");
@@ -122,7 +122,7 @@ void loop()
     dataBus->detachDataBus();
 
     Serial.println("Transferring register into ALUB");
-    controller->step(REGISTER_OUT | ALU_LD_B);
+    step(REGISTER_OUT | ALU_LD_B);
 
     // Add ALUA and ALUB, put the result on the bus and load into the register
     Serial.println("Add ALUA and ALUB, put the result on the bus and load it into the register");
