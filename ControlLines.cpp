@@ -7,8 +7,8 @@ ControlLines::ControlLines()
 {
     for (int controlPin = 0; controlPin < NUM_CONTROL_PINS; controlPin++)
     {
-        pinMode(controlBits[controlPin], OUTPUT);
-        digitalWrite(controlBits[controlPin], LOW);
+        pinMode(controlBitToPin(controlPin), OUTPUT);
+        digitalWrite(controlBitToPin(controlPin), LOW);
     }
 }
 

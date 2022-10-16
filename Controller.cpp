@@ -1,6 +1,7 @@
 #include "Controller.h"
 #include "Pins.h"
 
+// High and low time for a clock cycle
 #define CLOCK_PULSE_DELAY_MICROS 100
 
 Controller::Controller(ControlLines *controlLines)

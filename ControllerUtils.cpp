@@ -1,5 +1,8 @@
 #include "ControllerUtils.h"
 
+#define COUNT_DELAY_MILLIS 20
+#define SCAN_DELAY_MILLIS 20
+
 ControllerUtils::ControllerUtils(DataBus *dataBus, Controller *controller)
 {
     _dataBus = dataBus;
@@ -13,7 +16,7 @@ void ControllerUtils::count(byte ldLine)
         _dataBus->setDataBus(value);
         _controller->step(ldLine);
         _dataBus->detachDataBus();
-        delay(20);
+        delay(COUNT_DELAY_MILLIS);
     }
 }
 
@@ -27,7 +30,7 @@ void ControllerUtils::scan(byte ldLine)
             _dataBus->setDataBus(1 << bit);
             _controller->step(ldLine);
             _dataBus->detachDataBus();
-            delay(10);
+            delay(SCAN_DELAY_MILLIS);
         }
 
         for (int bit = 7; bit >= 0; bit--)
@@ -35,7 +38,7 @@ void ControllerUtils::scan(byte ldLine)
             _dataBus->setDataBus(1 << bit);
             _controller->step(ldLine);
             _dataBus->detachDataBus();
-            delay(10);
+            delay(SCAN_DELAY_MILLIS);
         }
     }
 }

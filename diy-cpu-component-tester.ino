@@ -27,10 +27,6 @@ void setup()
 
     dataBus->detachDataBus();
     controlLines->resetControlLines();
-
-    delay(100);
-
-    // controllerUtils->count(REGISTER_LD);
 }
 
 void menu()
