@@ -1,7 +1,7 @@
 #include "DataBus.h"
 #include "Pins.h"
 
-void DataBus::setDataBus(byte value)
+void DataBus::set(byte value)
 {
     for (byte offset = 0; offset < 8; offset++)
     {
@@ -10,7 +10,7 @@ void DataBus::setDataBus(byte value)
     }
 }
 
-void DataBus::detachDataBus()
+void DataBus::detach()
 {
     for (int offset = 0; offset < 8; offset++)
     {
@@ -19,10 +19,10 @@ void DataBus::detachDataBus()
     }
 }
 
-byte DataBus::readDataBus()
+byte DataBus::read()
 {
     byte result = 0;
-    detachDataBus();
+    detach();
 
     for (int pin = BUS_PIN_LOW; pin <= BUS_PIN_HIGH; pin++)
     {

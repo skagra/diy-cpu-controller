@@ -17,7 +17,7 @@ int ControlLines::controlBitToPin(byte bitNumber)
     return controlBits[bitNumber];
 }
 
-void ControlLines::setControlLines(byte lines)
+void ControlLines::set(byte lines)
 {
     for (byte offset = 0; offset < 7; offset++)
     {
@@ -25,7 +25,7 @@ void ControlLines::setControlLines(byte lines)
     }
 }
 
-void ControlLines::resetControlLines()
+void ControlLines::reset()
 {
-    setControlLines(0);
+    set(0);
 }

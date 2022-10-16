@@ -22,7 +22,7 @@ void Controller::pulseClock()
 
 void Controller::step(byte controlLineBits, unsigned int delayMicros)
 {
-    _controlLines->setControlLines(controlLineBits);
+    _controlLines->set(controlLineBits);
     pulseClock();
     delayMicroseconds(delayMicros);
 }

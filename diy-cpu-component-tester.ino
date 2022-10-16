@@ -25,8 +25,8 @@ void setup()
     while (!Serial)
         delay(100);
 
-    dataBus->detachDataBus();
-    controlLines->resetControlLines();
+    dataBus->detach();
+    controlLines->reset();
 }
 
 void menu()
@@ -91,33 +91,33 @@ void loop()
 
     // Load 0xFF into the register
     Serial.println("Loading 0xFF into the register");
-    dataBus->setDataBus(0xFF);
+    dataBus->set(0xFF);
     step(REGISTER_LD);
-    dataBus->detachDataBus();
+    dataBus->detach();
 
     // Zero out the register, ALUA and ALUB
     Serial.println("Zeroing out register");
-    dataBus->setDataBus(0);
+    dataBus->set(0);
     step(REGISTER_LD);
-    dataBus->detachDataBus();
+    dataBus->detach();
 
     Serial.println("Transferring register into ALUA and ALUB");
     step(REGISTER_OUT | ALU_LD_A | ALU_LD_B);
 
     // Store 134 in ALUA
     Serial.println("Loading 134 into register");
-    dataBus->setDataBus(134);
+    dataBus->set(134);
     step(REGISTER_LD);
-    dataBus->detachDataBus();
+    dataBus->detach();
 
     Serial.println("Transferring register into ALUA");
     step(REGISTER_OUT | ALU_LD_A);
 
     // Store 50 in ALUB
     Serial.println("Loading 50 into register");
-    dataBus->setDataBus(50);
+    dataBus->set(50);
     step(REGISTER_LD);
-    dataBus->detachDataBus();
+    dataBus->detach();
 
     Serial.println("Transferring register into ALUB");
     step(REGISTER_OUT | ALU_LD_B);
@@ -128,7 +128,7 @@ void loop()
 
     // Read the result
     Serial.print("Result=");
-    byte result = dataBus->readDataBus();
+    byte result = dataBus->read();
     Serial.println(result);
 
     // Move the result of the previous calculation into ALUA
@@ -137,9 +137,9 @@ void loop()
 
     // Store 22 in ALUB
     Serial.println("Loading 22 into register");
-    dataBus->setDataBus(22);
+    dataBus->set(22);
     step(REGISTER_LD);
-    dataBus->detachDataBus();
+    dataBus->detach();
 
     Serial.println("Transferring register into ALUB");
     step(REGISTER_OUT | ALU_LD_B);
@@ -150,6 +150,6 @@ void loop()
 
     // Read the result
     Serial.print("Result=");
-    result = dataBus->readDataBus();
+    result = dataBus->read();
     Serial.println(result);
 }

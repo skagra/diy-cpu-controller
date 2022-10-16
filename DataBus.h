@@ -6,9 +6,9 @@
 class DataBus
 {
 public:
-    void setDataBus(byte value);
-    void detachDataBus();
-    byte readDataBus();
+    void set(byte value);
+    void detach();
+    byte read();
 };
 
 #endif

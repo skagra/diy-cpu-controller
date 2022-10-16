@@ -19,8 +19,8 @@ private:
 
 public:
     ControlLines();
-    void resetControlLines();
-    void setControlLines(byte lines);
+    void reset();
+    void set(byte lines);
 };
 
 #endif

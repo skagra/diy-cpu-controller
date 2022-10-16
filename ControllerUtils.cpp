@@ -13,9 +13,9 @@ void ControllerUtils::count(byte ldLine)
 {
     for (int value = 0; value < 256; value++)
     {
-        _dataBus->setDataBus(value);
+        _dataBus->set(value);
         _controller->step(ldLine);
-        _dataBus->detachDataBus();
+        _dataBus->detach();
         delay(COUNT_DELAY_MILLIS);
     }
 }
@@ -27,17 +27,17 @@ void ControllerUtils::scan(byte ldLine)
     {
         for (int bit = 0; bit < 8; bit++)
         {
-            _dataBus->setDataBus(1 << bit);
+            _dataBus->set(1 << bit);
             _controller->step(ldLine);
-            _dataBus->detachDataBus();
+            _dataBus->detach();
             delay(SCAN_DELAY_MILLIS);
         }
 
         for (int bit = 7; bit >= 0; bit--)
         {
-            _dataBus->setDataBus(1 << bit);
+            _dataBus->set(1 << bit);
             _controller->step(ldLine);
-            _dataBus->detachDataBus();
+            _dataBus->detach();
             delay(SCAN_DELAY_MILLIS);
         }
     }
