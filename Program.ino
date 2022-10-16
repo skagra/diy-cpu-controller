@@ -3,11 +3,7 @@
 #include "ControlLines.h"
 #include "Controller.h"
 #include "ControllerUtils.h"
-
-#define ALU_OP_ADD 0
-#define ALU_OP_SUB ALU_OP_0
-#define ALU_OP_INC ALU_OP_1
-#define ALU_OP_DEC ALU_OP_0 | ALU_OP_1
+#include "AluOps.h"
 
 #define BAUD_RATE 57600
 
@@ -34,7 +30,7 @@ void setup()
 
     delay(100);
 
-    controllerUtils->count(REGISTER_LD);
+    // controllerUtils->count(REGISTER_LD);
 }
 
 void menu()
@@ -95,7 +91,7 @@ void loop()
 {
     menu();
 
-    controllerUtils->scan(REGISTER_LD);
+    //  controllerUtils->scan(REGISTER_LD);
 
     // Load 0xFF into the register
     Serial.println("Loading 0xFF into the register");
