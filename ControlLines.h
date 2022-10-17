@@ -13,10 +13,6 @@
 
 class ControlLines
 {
-private:
-    const int controlBits[7] = {10, 11, 14, 15, 16, 17, 18};
-    int controlBitToPin(byte bitNumber);
-
 public:
     ControlLines();
     void reset();
