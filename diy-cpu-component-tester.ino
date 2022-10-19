@@ -87,44 +87,44 @@ void loop()
 {
     menu();
 
-    //  controllerUtils->scan(REGISTER_LD);
+    //  controllerUtils->scan(REGISTER_A_LD);
 
-    // Load 0xFF into the register
-    Serial.println("Loading 0xFF into the register");
+    // Load 0xFF into both registers
+    Serial.println("Loading 0xFF into A and X registers");
     dataBus->set(0xFF);
-    step(REGISTER_LD);
+    step(REGISTER_A_LD | REGISTER_X_LD);
     dataBus->detach();
 
-    // Zero out the register, ALUA and ALUB
-    Serial.println("Zeroing out register");
+    // Zero out registers, ALUA and ALUB
+    Serial.println("Zeroing out A and X registers");
     dataBus->set(0);
-    step(REGISTER_LD);
+    step(REGISTER_A_LD | REGISTER_X_LD);
     dataBus->detach();
 
-    Serial.println("Transferring register into ALUA and ALUB");
-    step(REGISTER_OUT | ALU_LD_A | ALU_LD_B);
+    Serial.println("Transferring A register into ALUA and ALUB");
+    step(REGISTER_A_OUT | ALU_LD_A | ALU_LD_B);
 
     // Store 134 in ALUA
-    Serial.println("Loading 134 into register");
+    Serial.println("Loading 134 into X register");
     dataBus->set(134);
-    step(REGISTER_LD);
+    step(REGISTER_X_LD);
     dataBus->detach();
 
-    Serial.println("Transferring register into ALUA");
-    step(REGISTER_OUT | ALU_LD_A);
+    Serial.println("Transferring X register into ALUA");
+    step(REGISTER_X_OUT | ALU_LD_A);
 
     // Store 50 in ALUB
-    Serial.println("Loading 50 into register");
+    Serial.println("Loading 50 into A register");
     dataBus->set(50);
-    step(REGISTER_LD);
+    step(REGISTER_A_LD);
     dataBus->detach();
 
-    Serial.println("Transferring register into ALUB");
-    step(REGISTER_OUT | ALU_LD_B);
+    Serial.println("Transferring A register into ALUB");
+    step(REGISTER_A_OUT | ALU_LD_B);
 
     // Add ALUA and ALUB, put the result on the bus and load into the register
-    Serial.println("Add ALUA and ALUB, put the result on the bus and load it into the register");
-    step(ALU_OP_ADD | ALU_OUT | REGISTER_LD);
+    Serial.println("Add ALUA and ALUB, put the result on the bus and load it into the A register");
+    step(ALU_OP_ADD | ALU_OUT | REGISTER_A_LD);
 
     // Read the result
     Serial.print("Result=");
@@ -132,21 +132,25 @@ void loop()
     Serial.println(result);
 
     // Move the result of the previous calculation into ALUA
-    Serial.println("Moving calculation result in the register result into ALUA");
-    step(REGISTER_OUT | ALU_LD_A);
+    Serial.println("Moving calculation result in the A register result into ALUA");
+    step(REGISTER_A_OUT | ALU_LD_A);
 
     // Store 22 in ALUB
-    Serial.println("Loading 22 into register");
+    Serial.println("Loading 22 into the A register");
     dataBus->set(22);
-    step(REGISTER_LD);
+    step(REGISTER_A_LD);
     dataBus->detach();
 
     Serial.println("Transferring register into ALUB");
-    step(REGISTER_OUT | ALU_LD_B);
+    step(REGISTER_A_OUT | ALU_LD_B);
 
     // Subtract ALUA and ALUB, put the result on the bus and load into the register
-    Serial.println("Subtract ALUA and ALUB, put the result on the bus and load it into the register");
-    step(ALU_OP_SUB | ALU_OUT | REGISTER_LD);
+    Serial.println("Subtract ALUA and ALUB, put the result on the bus and load it into the A register");
+    step(ALU_OP_SUB | ALU_OUT | REGISTER_A_LD);
+
+    // Transfer A to X
+    Serial.println("Transferring the A register to the X register");
+    step(REGISTER_A_OUT | REGISTER_X_LD);
 
     // Read the result
     Serial.print("Result=");
