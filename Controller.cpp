@@ -20,7 +20,7 @@ void Controller::pulseClock()
     delayMicroseconds(CLOCK_PULSE_DELAY_MICROS);
 }
 
-void Controller::step(byte controlLineBits, unsigned int delayMicros)
+void Controller::step(unsigned int controlLineBits, unsigned int delayMicros)
 {
     _controlLines->set(controlLineBits);
     pulseClock();

@@ -76,7 +76,7 @@ void waitForKey()
     }
 }
 
-void step(byte controlLines)
+void step(unsigned int controlLines)
 {
     controller->step(controlLines);
     delay(slowMotionMillis);
