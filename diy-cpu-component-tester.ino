@@ -1,9 +1,10 @@
 #include "Pins.h"
-#include "DataBus.h"
+#include "EightBitBus.h"
 #include "ControlLines.h"
 #include "Controller.h"
 #include "ControllerUtils.h"
 #include "AluOps.h"
+#include "Pins.h"
 
 #define BAUD_RATE 57600
 
@@ -13,7 +14,7 @@
 unsigned int slowMotionMillis = 0;
 bool waitForKeyPress = false;
 
-DataBus *dataBus = new DataBus();
+EightBitBus *dataBus = new EightBitBus(DATA_BUS_PIN_LOW);
 ControlLines *controlLines = new ControlLines();
 Controller *controller = new Controller(controlLines);
 ControllerUtils *controllerUtils = new ControllerUtils(dataBus, controller);

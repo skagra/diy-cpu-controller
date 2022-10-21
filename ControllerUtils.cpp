@@ -3,7 +3,7 @@
 #define COUNT_DELAY_MILLIS 20
 #define SCAN_DELAY_MILLIS 20
 
-ControllerUtils::ControllerUtils(DataBus *dataBus, Controller *controller)
+ControllerUtils::ControllerUtils(EightBitBus *dataBus, Controller *controller)
 {
     _dataBus = dataBus;
     _controller = controller;

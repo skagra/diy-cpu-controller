@@ -5,6 +5,7 @@
         "MILLIS",
         "MSBFIRST",
         "RCLC",
-        "SRCLCK"
+        "SRCLCK",
+        "XADDR"
     ]
 }
