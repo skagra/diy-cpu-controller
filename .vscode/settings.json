@@ -4,6 +4,7 @@
         "ALUB",
         "MILLIS",
         "MSBFIRST",
+        "PROGMEM",
         "RCLC",
         "SRCLCK",
         "XADDR"
