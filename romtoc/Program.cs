@@ -41,6 +41,10 @@ public static class RomToC
         var fileBytes = File.ReadAllBytes(inputFilePath);
         var outputWriter = new StreamWriter(outputFilePath);
 
+        outputWriter.WriteLine("// This file was auto-generated - DO NOT EDIT");
+        outputWriter.WriteLine($"// Source file: '{inputFilePath}'");
+        outputWriter.WriteLine($"// Date: {DateTime.UtcNow}");
+        outputWriter.WriteLine();
         outputWriter.WriteLine($"#ifndef {armour}");
         outputWriter.WriteLine($"#define {armour}");
         outputWriter.WriteLine();

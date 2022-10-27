@@ -1,5 +1,13 @@
 #include <avr/pgmspace.h>
 
+#include "uc/mModeDecoder.h"
+#include "uc/mOpDecoder.h"
+#include "uc/uROM_0.h"
+#include "uc/uROM_1.h"
+#include "uc/uROM_2.h"
+#include "uc/uROM_3.h"
+#include "uc/uROM_4.h"
+
 #include "Pins.h"
 #include "EightBitBus.h"
 #include "ControlLines.h"
@@ -12,6 +20,31 @@
 
 #define SLOW_MOTION_MILLIS 1000
 #define MENU_INPUT_TIMEOUT_MILLIS 10000
+
+#define ADDR_MODE_IMMEDIATE 0
+#define ADDR_MODE_ZP 1
+#define ADDR_MODE_INVALID 255
+
+#define EXT_A_LD_CDATA 0b00000000000000001000000000000000UL
+#define EXT_A_OUT_CDATA 0b00000000000000010000000000000000UL
+#define EXT_ALU_LD_A 0b00000000000100000000000000000000UL
+#define EXT_ALU_LD_B 0b00000000001000000000000000000000UL
+#define EXT_ALU_OP_0 0b00000000100000000000000000000000UL
+#define EXT_ALU_OP_1 0b00000001000000000000000000000000UL
+#define EXT_ALU_OUT 0b00000000010000000000000000000000UL
+#define EXT_MEM_OUT_XDATA 0b00000000000000000000000000001000UL
+#define EXT_MAR_LD_CADDR 0b00000000000000000000001000000000UL
+#define EXT_MBR_LD_XDATA 0b00000000000000000000000000100000UL
+#define EXT_MBR_OUT_CDATA 0b00000000000000000000000100000000UL
+#define EXT_CDATA_TO_CADDR 0b00000000000000000000000000000010UL
+#define EXT_MBR_LD_CDATA 0b00000000000000000000000010000000UL
+
+#define EXT_P0 0b00010000000000000000000000000000UL
+#define EXT_P1 0b00100000000000000000000000000000UL
+#define EXT_P2 0b01000000000000000000000000000000UL
+#define EXT_INC_PC 0b00000000000000000000010000000000UL
+
+#define EXT_PC_TO_MAR 0b00000000000000000100001000000000UL
 
 unsigned int slowMotionMillis = 0;
 bool waitForKeyPress = false;
@@ -81,12 +114,51 @@ void waitForKey()
 
 byte pc = 0;
 byte ir = 0;
+byte cuAddr = 0;
 bool halt = false;
 
 void hexMessage(const char *message, byte value)
 {
     Serial.print(message);
+    Serial.print("0x");
     Serial.println(value, HEX);
+}
+
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)       \
+    (byte & 0x80 ? '1' : '0'),     \
+        (byte & 0x40 ? '1' : '0'), \
+        (byte & 0x20 ? '1' : '0'), \
+        (byte & 0x10 ? '1' : '0'), \
+        (byte & 0x08 ? '1' : '0'), \
+        (byte & 0x04 ? '1' : '0'), \
+        (byte & 0x02 ? '1' : '0'), \
+        (byte & 0x01 ? '1' : '0')
+
+void printBinaryByte(byte value)
+{
+    char *buffer = new char[9];
+    sprintf(buffer, BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(value));
+    Serial.print((char *)buffer);
+    delete buffer;
+}
+
+void printBinaryInt(unsigned int value)
+{
+    printBinaryByte(value >> 8);
+    Serial.print("-");
+    printBinaryByte(value);
+}
+
+void printBinaryLong(unsigned long value)
+{
+    printBinaryByte(value >> 24);
+    Serial.print("-");
+    printBinaryByte(value >> 16);
+    Serial.print("-");
+    printBinaryByte(value >> 8);
+    Serial.print("-");
+    printBinaryByte(value);
 }
 
 void step(unsigned int controlLines)
@@ -96,8 +168,36 @@ void step(unsigned int controlLines)
     waitForKey();
 }
 
+int mapControlLineValues(unsigned long value)
+{
+    int result = 0;
+
+    result |= (value & EXT_A_LD_CDATA) ? A_LD_CDATA : 0;
+    result |= (value & EXT_A_OUT_CDATA) ? A_OUT_CDATA : 0;
+    result |= (value & EXT_ALU_LD_A) ? ALU_LD_A : 0;
+    result |= (value & EXT_ALU_LD_B) ? ALU_LD_B : 0;
+    result |= (value & EXT_ALU_OP_0) ? ALU_OP_0 : 0;
+    result |= (value & EXT_ALU_OP_1) ? ALU_OP_1 : 0;
+    result |= (value & EXT_ALU_OUT) ? ALU_OUT : 0;
+    result |= (value & EXT_MEM_OUT_XDATA) ? MEM_OUT_XDATA : 0;
+    result |= (value & EXT_MAR_LD_CADDR) ? MAR_LD_CADDR : 0;
+    result |= (value & EXT_MBR_LD_XDATA) ? MBR_LD_XDATA : 0;
+    result |= (value & EXT_MBR_OUT_CDATA) ? MBR_OUT_CDATA : 0;
+    result |= (value & EXT_CDATA_TO_CADDR) ? CDATA_TO_CADDR : 0;
+    result |= (value & EXT_MBR_LD_CDATA) ? MBR_LD_CDATA : 0;
+
+    return result;
+}
+
+int mapControlLineValues(byte rom4, byte rom3, byte rom2, byte rom1)
+{
+    return mapControlLineValues(((unsigned long)rom4) << 24 | ((unsigned long)rom3) << 16 | ((unsigned long)rom2) << 8 | rom1);
+}
+
 void setMAR(byte value)
 {
+    Serial.print("Setting MAR to ");
+    Serial.println(value, HEX);
     cdataBus->set(value);
     step(MAR_LD_CADDR | CDATA_TO_CADDR);
     cdataBus->detach();
@@ -116,11 +216,12 @@ void p0Fetch()
     setMAR(pc);
 
     // Load the current instruction into the MBR
-    step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
+    step(MEM_OUT_XDATA | MBR_LD_XDATA);
 
     // Transfer the MBR into IR
     step(MBR_OUT_CDATA);
     ir = cdataBus->read();
+    waitForKey();
 
     // Restore original MBR
     cdataBus->set(savedMBR);
@@ -133,24 +234,67 @@ void p0Fetch()
     Serial.println(F("<--- P0"));
 }
 
-#define ADDR_MODE_IMMEDIATE 0
-#define ADDR_MODE_ZP 1
-#define ADDR_MODE_INVALID 255
-
-const byte addrModeDecodeMapping[] PROGMEM{};
-
 byte addrModeDecode()
 {
-    if (ir == 0xA9 || ir == 0x69)
+    byte result = pgm_read_byte_near(mModeDecoder + ir);
+    hexMessage("Decoded mode: ", result);
+    return result;
+}
+
+unsigned long makeExtControlLines(byte rom4, byte rom3, byte rom2, byte rom1)
+{
+    unsigned long result = ((unsigned long)rom4) << 24 | ((unsigned long)rom3) << 16 | ((unsigned long)rom2) << 8 | rom1;
+
+    return result;
+}
+
+void executePhase(unsigned long doneFlag)
+{
+    bool done = false;
+
+    while (!done)
     {
-        return ADDR_MODE_IMMEDIATE;
+        hexMessage("cuaddr=", cuAddr);
+
+        unsigned long extControlLines = makeExtControlLines(
+            pgm_read_byte_near(uROM_4 + cuAddr),
+            pgm_read_byte_near(uROM_3 + cuAddr),
+            pgm_read_byte_near(uROM_2 + cuAddr),
+            pgm_read_byte_near(uROM_1 + cuAddr));
+
+        Serial.print("External control lines=");
+        printBinaryLong(extControlLines);
+        Serial.println();
+
+        unsigned int ctrlLines = mapControlLineValues(extControlLines);
+
+        Serial.print("Internal control lines=");
+        printBinaryInt(ctrlLines);
+        Serial.println();
+
+        if ((extControlLines & EXT_PC_TO_MAR) == EXT_PC_TO_MAR)
+        {
+            setMAR(pc);
+            ctrlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
+        }
+        done = extControlLines & doneFlag;
+        if (extControlLines & EXT_INC_PC)
+        {
+            pc++;
+            hexMessage("Incremented PC to ", pc);
+        }
+
+        if (ctrlLines)
+        {
+            step(ctrlLines);
+        }
+
+        cuAddr++;
+        if (!done)
+        {
+            Serial.println("---");
+        }
     }
-    else if (ir == 0x44 || ir == 0x65)
-    {
-        return ADDR_MODE_ZP;
-    }
-    else
-        return ADDR_MODE_INVALID;
 }
 
 void p1Addr()
@@ -158,48 +302,23 @@ void p1Addr()
     Serial.println(F("\nP1 --->"));
     hexMessage("PC=", pc);
 
-    byte mar;
-    switch (addrModeDecode())
-    {
-    case ADDR_MODE_IMMEDIATE:
-        Serial.println(F("Mode: IMM"));
-        mar = pc;
-        setMAR(pc);
-        pc++;
-        break;
-    case ADDR_MODE_ZP:
-        Serial.println(F("Mode: ZP"));
-        mar = pc;
-        setMAR(pc);
-        step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-        pc++;
-        step(MBR_OUT_CDATA | CDATA_TO_CADDR | MAR_LD_CADDR);
-        break;
-    default:
-        Serial.println(F("Invalid addressing mode"));
-        halt = true;
-        break;
-    }
-    hexMessage("MAR=", mar);
+    byte addrModeAddr = addrModeDecode();
+    cuAddr = addrModeAddr;
+
+    executePhase(EXT_P2);
+
     Serial.println(F("<--- P1"));
 }
 
-#define OP_CODE_LDA 0
-#define OP_CODE_ADD 1
 #define OP_CODE_INVALID 255
 
 byte opDecode()
 {
-    if (ir == 0xA9 || ir == 0x44)
-    {
-        return OP_CODE_LDA;
-    }
-    else if (ir == 0x69 || ir == 0x65)
-    {
-        return OP_CODE_ADD;
-    }
-    else
-        return ADDR_MODE_INVALID;
+    byte result = pgm_read_byte_near(mOpDecoder + ir);
+
+    hexMessage("Decoded OpCode: ", result);
+
+    return result;
 }
 
 void p2Op()
@@ -207,25 +326,11 @@ void p2Op()
     Serial.println(F("\nP2 --->"));
     hexMessage("PC=", pc);
 
-    switch (opDecode())
-    {
-    case OP_CODE_LDA:
-        Serial.println(F("OpCode: LDA"));
-        step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-        step(MBR_OUT_CDATA | REGISTER_A_LD);
-        break;
-    case OP_CODE_ADD:
-        Serial.println(F("OpCode: ADD"));
-        step(REGISTER_A_OUT | ALU_LD_A);
-        step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-        step(MBR_OUT_CDATA | ALU_LD_B);
-        step(ALU_OP_ADD | ALU_OUT | REGISTER_A_LD);
-        break;
-    default:
-        Serial.println(F("Invalid op code"));
-        halt = true;
-        break;
-    }
+    byte addrOpCodeAddr = opDecode();
+    cuAddr = addrOpCodeAddr;
+
+    executePhase(EXT_P0);
+
     Serial.println(F("<--- P2"));
 }
 
@@ -253,41 +358,4 @@ void loop()
             }
         }
     } while (!done && !halt);
-
-    // for (byte addr = 0; addr < 0x0F; addr++)
-    // {
-    //     pc = addr;
-    //     p0Fetch();
-    // }
-
-    // setMAR(0x00);
-
-    // Serial.println(F("ROM -> XDATA, XDATA -> MBR (0x07)"));
-    // step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-
-    // Serial.println(F("MBR -> ACC (0x07)"));
-    // step(MBR_OUT_CDATA | REGISTER_A_LD);
-
-    // Serial.println(F("ACC -> ALUA (0x7)"));
-    // step(REGISTER_A_OUT | ALU_LD_A);
-
-    // setMAR(0x01);
-
-    // Serial.println(F("ROM -> XDATA, XDATA -> MBR (0x09)"));
-    // step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-
-    // Serial.println(F("MBR -> ALUB (0x09)"));
-    // step(MBR_OUT_CDATA | ALU_LD_B);
-
-    // Serial.println(F("Add ALUA and ALUB, put the result on the bus and load it into the A register (0x10)"));
-    // step(ALU_OP_ADD | ALU_OUT | REGISTER_A_LD);
-
-    // Serial.println(F("Move the result into the MAR (so we've calculated an address) (0x10)"));
-    // step(REGISTER_A_OUT | CDATA_TO_CADDR | MAR_LD_CADDR);
-
-    // Serial.println(F("ROM -> XDATA, XDATA -> MBR (0x08)"));
-    // step(MAR_OUT_XADDR | MEM_OUT_XDATA | MBR_LD_XDATA);
-
-    // Serial.println(F("MBR -> ACC (0x08)"));
-    // step(MBR_OUT_CDATA | REGISTER_A_LD);
 }
