@@ -16,6 +16,8 @@
 #include "AluOps.h"
 #include "Pins.h"
 
+#include "Debug.h"
+
 #define BAUD_RATE 57600
 
 #define SLOW_MOTION_MILLIS 1000
@@ -117,50 +119,6 @@ byte ir = 0;
 byte cuAddr = 0;
 bool halt = false;
 
-void hexMessage(const char *message, byte value)
-{
-    Serial.print(message);
-    Serial.print("0x");
-    Serial.println(value, HEX);
-}
-
-#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
-#define BYTE_TO_BINARY(byte)       \
-    (byte & 0x80 ? '1' : '0'),     \
-        (byte & 0x40 ? '1' : '0'), \
-        (byte & 0x20 ? '1' : '0'), \
-        (byte & 0x10 ? '1' : '0'), \
-        (byte & 0x08 ? '1' : '0'), \
-        (byte & 0x04 ? '1' : '0'), \
-        (byte & 0x02 ? '1' : '0'), \
-        (byte & 0x01 ? '1' : '0')
-
-void printBinaryByte(byte value)
-{
-    char *buffer = new char[9];
-    sprintf(buffer, BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(value));
-    Serial.print((char *)buffer);
-    delete buffer;
-}
-
-void printBinaryInt(unsigned int value)
-{
-    printBinaryByte(value >> 8);
-    Serial.print("-");
-    printBinaryByte(value);
-}
-
-void printBinaryLong(unsigned long value)
-{
-    printBinaryByte(value >> 24);
-    Serial.print("-");
-    printBinaryByte(value >> 16);
-    Serial.print("-");
-    printBinaryByte(value >> 8);
-    Serial.print("-");
-    printBinaryByte(value);
-}
-
 void step(unsigned int controlLines)
 {
     controller->step(controlLines);
@@ -196,8 +154,7 @@ int mapControlLineValues(byte rom4, byte rom3, byte rom2, byte rom1)
 
 void setMAR(byte value)
 {
-    Serial.print("Setting MAR to ");
-    Serial.println(value, HEX);
+    debugPrint("Setting MAR", "MAR", value);
     cdataBus->set(value);
     step(MAR_LD_CADDR | CDATA_TO_CADDR);
     cdataBus->detach();
@@ -205,8 +162,9 @@ void setMAR(byte value)
 
 void p0Fetch()
 {
-    Serial.println(F("\nP0 --->"));
-    hexMessage("PC=", pc);
+    debugPrintln("\nP0 --->");
+    debugPrint("PC", pc);
+    debugPrintln();
 
     // Save MBR
     step(MBR_OUT_CDATA);
@@ -230,14 +188,14 @@ void p0Fetch()
     // Increment the pc
     pc++;
 
-    hexMessage("IR=", ir);
-    Serial.println(F("<--- P0"));
+    debugPrintln();
+    debugPrint("IR", ir);
+    debugPrintln("<--- P0");
 }
 
 byte addrModeDecode()
 {
     byte result = pgm_read_byte_near(mModeDecoder + ir);
-    hexMessage("Decoded mode: ", result);
     return result;
 }
 
@@ -254,7 +212,7 @@ void executePhase(unsigned long doneFlag)
 
     while (!done)
     {
-        hexMessage("cuaddr=", cuAddr);
+        debugPrint("cuaddr", cuAddr);
 
         unsigned long extControlLines = makeExtControlLines(
             pgm_read_byte_near(uROM_4 + cuAddr),
@@ -262,15 +220,11 @@ void executePhase(unsigned long doneFlag)
             pgm_read_byte_near(uROM_2 + cuAddr),
             pgm_read_byte_near(uROM_1 + cuAddr));
 
-        Serial.print("External control lines=");
-        printBinaryLong(extControlLines);
-        Serial.println();
+        debugPrint("External control lines", extControlLines, BASE_BIN);
 
         unsigned int ctrlLines = mapControlLineValues(extControlLines);
 
-        Serial.print("Internal control lines=");
-        printBinaryInt(ctrlLines);
-        Serial.println();
+        debugPrint("Internal control lines", ctrlLines, BASE_BIN);
 
         if ((extControlLines & EXT_PC_TO_MAR) == EXT_PC_TO_MAR)
         {
@@ -281,7 +235,7 @@ void executePhase(unsigned long doneFlag)
         if (extControlLines & EXT_INC_PC)
         {
             pc++;
-            hexMessage("Incremented PC to ", pc);
+            debugPrint("Incremented PC", "PC", pc);
         }
 
         if (ctrlLines)
@@ -292,22 +246,23 @@ void executePhase(unsigned long doneFlag)
         cuAddr++;
         if (!done)
         {
-            Serial.println("---");
+            debugPrintln();
         }
     }
 }
 
 void p1Addr()
 {
-    Serial.println(F("\nP1 --->"));
-    hexMessage("PC=", pc);
+    debugPrintln("\nP1 --->");
+    debugPrint("PC", pc);
+    debugPrintln();
 
     byte addrModeAddr = addrModeDecode();
     cuAddr = addrModeAddr;
 
     executePhase(EXT_P2);
 
-    Serial.println(F("<--- P1"));
+    debugPrintln("<--- P1");
 }
 
 #define OP_CODE_INVALID 255
@@ -316,22 +271,21 @@ byte opDecode()
 {
     byte result = pgm_read_byte_near(mOpDecoder + ir);
 
-    hexMessage("Decoded OpCode: ", result);
-
     return result;
 }
 
 void p2Op()
 {
-    Serial.println(F("\nP2 --->"));
-    hexMessage("PC=", pc);
+    debugPrintln("\nP2 --->");
+    debugPrint("PC", pc);
+    debugPrintln();
 
     byte addrOpCodeAddr = opDecode();
     cuAddr = addrOpCodeAddr;
 
     executePhase(EXT_P0);
 
-    Serial.println(F("<--- P2"));
+    debugPrintln("<--- P2");
 }
 
 void loop()

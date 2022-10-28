@@ -1,6 +1,8 @@
 #include "ControlLines.h"
 #include "Pins.h"
 
+#include "Debug.h"
+
 ControlLines::ControlLines()
 {
     pinMode(SHIFT_DATA_PIN, OUTPUT);
@@ -35,14 +37,14 @@ void ControlLines::decode(unsigned int match, unsigned int lines, const char *va
 {
     if (match & lines)
     {
-        Serial.print(value);
-        Serial.print(" ");
+        debugPrint(value);
+        debugPrint(" ");
     }
 }
 
 void ControlLines::decode(unsigned int lines)
 {
-    Serial.print("Decoded: ");
+    debugPrint("Decoded: ");
     decode(A_LD_CDATA, lines, "A_LD_CDATA");
     decode(A_OUT_CDATA, lines, "A_OUT_CDATA");
     decode(ALU_LD_A, lines, "ALU_LD_A");
@@ -56,5 +58,5 @@ void ControlLines::decode(unsigned int lines)
     decode(MBR_OUT_CDATA, lines, "MBR_OUT_CDATA");
     decode(CDATA_TO_CADDR, lines, "CDATA_TO_CADDR");
     decode(MBR_LD_CDATA, lines, "MBR_LD_CDATA");
-    Serial.println();
+    debugPrintln();
 }

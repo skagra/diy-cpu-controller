@@ -186,7 +186,7 @@ void p0Fetch()
     // Increment the pc
     pc++;
 
-    hexMessage("IR=", ir);
+    hexMessage("IR", ir);
     Serial.println(F("<--- P0"));
 }
 
@@ -323,8 +323,6 @@ byte opDecode()
     // else
     //     return ADDR_MODE_INVALID;
 }
-
-
 
 void p2Op()
 {
