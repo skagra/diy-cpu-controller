@@ -69,7 +69,6 @@ void debugPrintHex(byte value, bool ms)
     }
     sprintf(buffer, "%.2X", value);
     debugPrint(buffer);
-    delete buffer;
 }
 
 void debugPrintHex(unsigned int value)

@@ -23,30 +23,8 @@
 #define SLOW_MOTION_MILLIS 1000
 #define MENU_INPUT_TIMEOUT_MILLIS 10000
 
-#define ADDR_MODE_IMMEDIATE 0
-#define ADDR_MODE_ZP 1
 #define ADDR_MODE_INVALID 255
-
-#define EXT_A_LD_CDATA 0b00000000000000001000000000000000UL
-#define EXT_A_OUT_CDATA 0b00000000000000010000000000000000UL
-#define EXT_ALU_LD_A 0b00000000000100000000000000000000UL
-#define EXT_ALU_LD_B 0b00000000001000000000000000000000UL
-#define EXT_ALU_OP_0 0b00000000100000000000000000000000UL
-#define EXT_ALU_OP_1 0b00000001000000000000000000000000UL
-#define EXT_ALU_OUT 0b00000000010000000000000000000000UL
-#define EXT_MEM_OUT_XDATA 0b00000000000000000000000000001000UL
-#define EXT_MAR_LD_CADDR 0b00000000000000000000001000000000UL
-#define EXT_MBR_LD_XDATA 0b00000000000000000000000000100000UL
-#define EXT_MBR_OUT_CDATA 0b00000000000000000000000100000000UL
-#define EXT_CDATA_TO_CADDR 0b00000000000000000000000000000010UL
-#define EXT_MBR_LD_CDATA 0b00000000000000000000000010000000UL
-
-#define EXT_P0 0b00010000000000000000000000000000UL
-#define EXT_P1 0b00100000000000000000000000000000UL
-#define EXT_P2 0b01000000000000000000000000000000UL
-#define EXT_INC_PC 0b00000000000000000000010000000000UL
-
-#define EXT_PC_TO_MAR 0b00000000000000000100001000000000UL
+#define PC_TO_MAR (PC_OUT_CADDR | MAR_LD_CADDR)
 
 unsigned int slowMotionMillis = 0;
 bool waitForKeyPress = false;
@@ -119,37 +97,11 @@ byte ir = 0;
 byte cuAddr = 0;
 bool halt = false;
 
-void step(unsigned int controlLines)
+void step(unsigned long controlLines)
 {
     controller->step(controlLines);
     delay(slowMotionMillis);
     waitForKey();
-}
-
-int mapControlLineValues(unsigned long value)
-{
-    int result = 0;
-
-    result |= (value & EXT_A_LD_CDATA) ? A_LD_CDATA : 0;
-    result |= (value & EXT_A_OUT_CDATA) ? A_OUT_CDATA : 0;
-    result |= (value & EXT_ALU_LD_A) ? ALU_LD_A : 0;
-    result |= (value & EXT_ALU_LD_B) ? ALU_LD_B : 0;
-    result |= (value & EXT_ALU_OP_0) ? ALU_OP_0 : 0;
-    result |= (value & EXT_ALU_OP_1) ? ALU_OP_1 : 0;
-    result |= (value & EXT_ALU_OUT) ? ALU_OUT : 0;
-    result |= (value & EXT_MEM_OUT_XDATA) ? MEM_OUT_XDATA : 0;
-    result |= (value & EXT_MAR_LD_CADDR) ? MAR_LD_CADDR : 0;
-    result |= (value & EXT_MBR_LD_XDATA) ? MBR_LD_XDATA : 0;
-    result |= (value & EXT_MBR_OUT_CDATA) ? MBR_OUT_CDATA : 0;
-    result |= (value & EXT_CDATA_TO_CADDR) ? CDATA_TO_CADDR : 0;
-    result |= (value & EXT_MBR_LD_CDATA) ? MBR_LD_CDATA : 0;
-
-    return result;
-}
-
-int mapControlLineValues(byte rom4, byte rom3, byte rom2, byte rom1)
-{
-    return mapControlLineValues(((unsigned long)rom4) << 24 | ((unsigned long)rom3) << 16 | ((unsigned long)rom2) << 8 | rom1);
 }
 
 void setMAR(byte value)
@@ -199,7 +151,7 @@ byte addrModeDecode()
     return result;
 }
 
-unsigned long makeExtControlLines(byte rom4, byte rom3, byte rom2, byte rom1)
+unsigned long makeControlLines(byte rom4, byte rom3, byte rom2, byte rom1)
 {
     unsigned long result = ((unsigned long)rom4) << 24 | ((unsigned long)rom3) << 16 | ((unsigned long)rom2) << 8 | rom1;
 
@@ -214,33 +166,29 @@ void executePhase(unsigned long doneFlag)
     {
         debugPrint("cuaddr", cuAddr);
 
-        unsigned long extControlLines = makeExtControlLines(
+        unsigned long controlLines = makeControlLines(
             pgm_read_byte_near(uROM_4 + cuAddr),
             pgm_read_byte_near(uROM_3 + cuAddr),
             pgm_read_byte_near(uROM_2 + cuAddr),
             pgm_read_byte_near(uROM_1 + cuAddr));
 
-        debugPrint("External control lines", extControlLines, BASE_BIN);
+        debugPrint("Control lines", (unsigned long)controlLines, BASE_BIN);
 
-        unsigned int ctrlLines = mapControlLineValues(extControlLines);
-
-        debugPrint("Internal control lines", ctrlLines, BASE_BIN);
-
-        if ((extControlLines & EXT_PC_TO_MAR) == EXT_PC_TO_MAR)
+        if ((controlLines & PC_TO_MAR) == PC_TO_MAR)
         {
             setMAR(pc);
-            ctrlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
+            controlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
         }
-        done = extControlLines & doneFlag;
-        if (extControlLines & EXT_INC_PC)
+        done = controlLines & doneFlag;
+        if (controlLines & PC_INC)
         {
             pc++;
             debugPrint("Incremented PC", "PC", pc);
         }
 
-        if (ctrlLines)
+        if (controlLines)
         {
-            step(ctrlLines);
+            step(controlLines);
         }
 
         cuAddr++;
@@ -260,7 +208,7 @@ void p1Addr()
     byte addrModeAddr = addrModeDecode();
     cuAddr = addrModeAddr;
 
-    executePhase(EXT_P2);
+    executePhase(uP2);
 
     debugPrintln("<--- P1");
 }
@@ -283,7 +231,7 @@ void p2Op()
     byte addrOpCodeAddr = opDecode();
     cuAddr = addrOpCodeAddr;
 
-    executePhase(EXT_P0);
+    executePhase(uP0);
 
     debugPrintln("<--- P2");
 }

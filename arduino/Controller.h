@@ -11,7 +11,7 @@ private:
 public:
     Controller(ControlLines *controlLines);
     void pulseClock();
-    void step(unsigned int controlLineBits, unsigned int delayMicros = 1);
+    void step(unsigned long controlLineBits, unsigned int delayMicros = 1);
 };
 
 #endif

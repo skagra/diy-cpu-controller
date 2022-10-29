@@ -12,7 +12,7 @@ ControlLines::ControlLines()
     reset();
 }
 
-void ControlLines::set(unsigned int lines)
+void ControlLines::set(unsigned long lines)
 {
     decode(lines);
 
@@ -20,10 +20,8 @@ void ControlLines::set(unsigned int lines)
 
     shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)lines);
     shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 8));
-
-    // HACK
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)lines);
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 8));
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 16));
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 24));
 
     digitalWrite(SHIFT_LATCH_PIN, HIGH);
 }
@@ -33,30 +31,55 @@ void ControlLines::reset()
     set(0);
 }
 
-void ControlLines::decode(unsigned int match, unsigned int lines, const char *value)
-{
-    if (match & lines)
-    {
-        debugPrint(value);
-        debugPrint(" ");
-    }
-}
+const char *decoder[] = {
+    "CDATA_LD_0",
+    "CDATA_TO_CADDR",
+    "MEM_LD_XDATA",
+    "MEM_OUT_XDATA",
+    "IR_LD_XDATA",
+    "MBR_LD_XDATA",
+    "MBR_OUT_XDATA",
+    "MBR_LD_CDATA",
+    "MBR_OUT_CDATA",
+    "MAR_LD_CADDR",
+    "PC_INC",
+    "PC_REL_CDATA",
+    "PC_LD_CDATA",
+    "PC_OUT_CDATA",
+    "PC_OUT_CADDR",
+    "A_LD_CDATA",
+    "A_OUT_CDATA",
+    "X_LD_CDATA",
+    "X_OUT_CDATA",
+    "PZ_LD",
+    "ALUA_LD_CDATA",
+    "ALUB_LD_CDATA",
+    "ALUR_OUT_CDATA",
+    "ALUOP_0",
+    "ALUOP_1",
+    "Z_SRC_CDATA",
+    "uJMP",
+    "uJMPINV",
+    "uP0",
+    "uP1",
+    "uP2",
+    "uZJMP"};
 
-void ControlLines::decode(unsigned int lines)
+void ControlLines::decode(unsigned long lines)
 {
+    bool printing = false;
     debugPrint("Decoded: ");
-    decode(A_LD_CDATA, lines, "A_LD_CDATA");
-    decode(A_OUT_CDATA, lines, "A_OUT_CDATA");
-    decode(ALU_LD_A, lines, "ALU_LD_A");
-    decode(ALU_LD_B, lines, "ALU_LD_B");
-    decode(ALU_OP_0, lines, "ALU_OP_0");
-    decode(ALU_OP_1, lines, "ALU_OP_1");
-    decode(ALU_OUT, lines, "ALU_OUT");
-    decode(MEM_OUT_XDATA, lines, "MEM_OUT_XDATA");
-    decode(MAR_LD_CADDR, lines, "MAR_LD_CADDR");
-    decode(MBR_LD_XDATA, lines, "MBR_LD_XDATA");
-    decode(MBR_OUT_CDATA, lines, "MBR_OUT_CDATA");
-    decode(CDATA_TO_CADDR, lines, "CDATA_TO_CADDR");
-    decode(MBR_LD_CDATA, lines, "MBR_LD_CDATA");
+    for (int bit = 0; bit < 32; bit++)
+    {
+        if ((lines >> bit) & 1UL)
+        {
+            if (printing)
+            {
+                debugPrint(" | ");
+            }
+            debugPrint(decoder[bit]);
+            printing = true;
+        }
+    }
     debugPrintln();
 }
