@@ -4,6 +4,7 @@
 EightBitBus::EightBitBus(int lowBusPin)
 {
     _lowBusPin = lowBusPin;
+    detach();
 }
 
 void EightBitBus::set(byte value)

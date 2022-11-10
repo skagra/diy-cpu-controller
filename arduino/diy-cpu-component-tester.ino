@@ -28,11 +28,17 @@
 
 unsigned int slowMotionMillis = 0;
 bool waitForKeyPress = false;
+unsigned long iterations = 0;
+bool testMode = false;
 
 EightBitBus *cdataBus = new EightBitBus(DATA_BUS_PIN_LOW);
 ControlLines *controlLines = new ControlLines();
 Controller *controller = new Controller(controlLines);
 ControllerUtils *controllerUtils = new ControllerUtils(cdataBus, controller);
+
+byte pc = 0;
+byte ir = 0;
+byte cuaddr = 0;
 
 void setup()
 {
@@ -40,9 +46,6 @@ void setup()
 
     while (!Serial)
         delay(100);
-
-    cdataBus->detach();
-    controlLines->reset();
 }
 
 void menu()
@@ -52,10 +55,11 @@ void menu()
     bool gotOption = false;
     while (!gotOption)
     {
-        Serial.println(F("Select mode: r (run), z (slow motion), s (single step)"));
+        Serial.println(F("Select mode: r (run), z (slow motion), s (single step), t (test)"));
         while (Serial.available() == 0)
             delay(100);
         byte option = Serial.read();
+
         gotOption = true;
         switch (option)
         {
@@ -75,6 +79,13 @@ void menu()
             slowMotionMillis = 0;
             waitForKeyPress = true;
             break;
+        case 't':
+            Serial.println(F("Test mode."));
+            slowMotionMillis = 0;
+            waitForKeyPress = false;
+            testMode = true;
+            iterations = 0;
+            break;
         default:
             gotOption = false;
         }
@@ -92,11 +103,6 @@ void waitForKey()
     }
 }
 
-byte pc = 0;
-byte ir = 0;
-byte cuAddr = 0;
-bool halt = false;
-
 void step(unsigned long controlLines)
 {
     controller->step(controlLines);
@@ -112,8 +118,10 @@ void setMAR(byte value)
     cdataBus->detach();
 }
 
-void p0Fetch()
+bool p0Fetch()
 {
+    bool error = false;
+
     debugPrintln("\nP0 --->");
     debugPrint("PC", pc);
     debugPrintln();
@@ -131,18 +139,26 @@ void p0Fetch()
     // Transfer the MBR into IR
     step(MBR_OUT_CDATA);
     ir = cdataBus->read();
-    waitForKey();
+    error = ir == 0xFF;
 
-    // Restore original MBR
-    cdataBus->set(savedMBR);
-    step(MBR_LD_CDATA);
+    if (!error)
+    {
+        waitForKey();
 
-    // Increment the pc
-    pc++;
+        // Restore original MBR
+        cdataBus->set(savedMBR);
+        step(MBR_LD_CDATA);
+        cdataBus->detach();
 
-    debugPrintln();
-    debugPrint("IR", ir);
-    debugPrintln("<--- P0");
+        // Increment the pc
+        pc++;
+
+        debugPrintln();
+        debugPrint("IR", ir);
+        debugPrintln("<--- P0");
+    }
+
+    return error;
 }
 
 byte addrModeDecode()
@@ -158,62 +174,92 @@ unsigned long makeControlLines(byte rom4, byte rom3, byte rom2, byte rom1)
     return result;
 }
 
-void executePhase(unsigned long doneFlag)
+bool executePhase(unsigned long doneFlag)
 {
+    bool error = false;
     bool done = false;
 
-    while (!done)
+    while (!done && !error)
     {
-        debugPrint("cuaddr", cuAddr);
+        debugPrint("cuaddr", cuaddr);
+        error = cuaddr == 0xFF;
 
-        unsigned long controlLines = makeControlLines(
-            pgm_read_byte_near(uROM_4 + cuAddr),
-            pgm_read_byte_near(uROM_3 + cuAddr),
-            pgm_read_byte_near(uROM_2 + cuAddr),
-            pgm_read_byte_near(uROM_1 + cuAddr));
-
-        debugPrint("Control lines", (unsigned long)controlLines, BASE_BIN);
-
-        if ((controlLines & PC_TO_MAR) == PC_TO_MAR)
+        if (!error)
         {
-            setMAR(pc);
-            controlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
-        }
-        done = controlLines & doneFlag;
-        if (controlLines & PC_INC)
-        {
-            pc++;
-            debugPrint("Incremented PC", "PC", pc);
-        }
+            unsigned long controlLines = makeControlLines(
+                pgm_read_byte_near(uROM_4 + cuaddr),
+                pgm_read_byte_near(uROM_3 + cuaddr),
+                pgm_read_byte_near(uROM_2 + cuaddr),
+                pgm_read_byte_near(uROM_1 + cuaddr));
 
-        if (controlLines)
-        {
-            step(controlLines);
-        }
+            debugPrint("Control lines", (unsigned long)controlLines, BASE_BIN, true);
 
-        cuAddr++;
-        if (!done)
-        {
-            debugPrintln();
+            error = controlLines == 0xFF;
+
+            if (!error)
+            {
+                if ((controlLines & PC_TO_MAR) == PC_TO_MAR)
+                {
+                    setMAR(pc);
+                    controlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
+                }
+                done = controlLines & doneFlag;
+                if (controlLines & PC_INC)
+                {
+                    pc++;
+                    debugPrint("Incremented PC", "PC", pc);
+                }
+
+                if (controlLines)
+                {
+                    step(controlLines);
+                }
+
+                cuaddr++;
+                if (!done)
+                {
+                    debugPrintln();
+                }
+            }
         }
     }
+
+    return error;
 }
 
-void p1Addr()
+bool pInit()
 {
+    bool error = false;
+
+    debugPrintln("\nPInit --->");
+    debugPrint("PC", pc);
+    debugPrintln();
+
+    cuaddr = 0;
+    error = executePhase(uP0);
+
+    debugPrintln("<--- P1");
+
+    return error;
+}
+
+bool p1Addr()
+{
+    bool error = false;
+
     debugPrintln("\nP1 --->");
     debugPrint("PC", pc);
     debugPrintln();
 
     byte addrModeAddr = addrModeDecode();
-    cuAddr = addrModeAddr;
+    cuaddr = addrModeAddr;
 
-    executePhase(uP2);
+    error = executePhase(uP2);
 
     debugPrintln("<--- P1");
-}
 
-#define OP_CODE_INVALID 255
+    return error;
+}
 
 byte opDecode()
 {
@@ -222,42 +268,87 @@ byte opDecode()
     return result;
 }
 
-void p2Op()
+bool p2Op()
 {
+    bool error = false;
+
     debugPrintln("\nP2 --->");
     debugPrint("PC", pc);
     debugPrintln();
 
     byte addrOpCodeAddr = opDecode();
-    cuAddr = addrOpCodeAddr;
+    cuaddr = addrOpCodeAddr;
 
-    executePhase(uP0);
+    error = executePhase(uP0);
 
     debugPrintln("<--- P2");
+
+    return error;
 }
 
 void loop()
 {
-    menu();
-    pc = 0;
+    pInit();
 
+    if (!testMode)
+    {
+        menu();
+        waitForKey();
+    }
+
+    pc = 0;
     bool done = false;
-    halt = false;
+    bool error = false;
+
     do
     {
-        p0Fetch();
-
+        error = p0Fetch();
         done = ir == 0;
-        if (!done)
+
+        if (!done && !error)
         {
-            if (!halt)
+            if (!done && !error)
             {
-                p1Addr();
-                if (!halt)
+                error = p1Addr();
+
+                if (!error)
                 {
-                    p2Op();
+                    error = p2Op();
                 }
             }
         }
-    } while (!done && !halt);
+    } while (!done && !error);
+
+    if (error)
+    {
+        Serial.println();
+        Serial.println("===============");
+        Serial.println("==== ERROR ====");
+        debugPrintln("Error condition: ");
+        debugPrint("IR", ir, BASE_HEX, false);
+        debugPrint(", PC", pc, BASE_HEX, false);
+        debugPrint(", cuaddr", cuaddr, BASE_HEX, true);
+        Serial.print("Iterations="); // TODO
+        Serial.println(iterations);
+        Serial.println("===============");
+        Serial.println();
+
+        while (true)
+        {
+            delay(1000);
+        }
+    }
+
+    iterations++;
+
+    if (!testMode)
+    {
+        Serial.println("Press key to reset");
+
+        while (Serial.read() == -1)
+        {
+            delay(100);
+        }
+    }
+    waitForKeyPress = false;
 }

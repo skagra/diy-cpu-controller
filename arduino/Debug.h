@@ -8,7 +8,8 @@
 enum Base
 {
     BASE_BIN,
-    BASE_HEX
+    BASE_HEX,
+    BASE_DEC
 };
 
 void debugPrint(const char *message);

@@ -2,11 +2,16 @@
     "cSpell.words": [
         "ALUA",
         "ALUB",
+        "ALUOP",
+        "ALUR",
+        "cuaddr",
+        "JMPINV",
         "MILLIS",
         "MSBFIRST",
         "PROGMEM",
         "RCLC",
         "SRCLCK",
-        "XADDR"
+        "XADDR",
+        "ZJMP"
     ]
 }
