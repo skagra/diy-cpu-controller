@@ -7,12 +7,20 @@
 class Controller
 {
 public:
-    typedef void (*StepCallbackFunc)();
+    enum Phase
+    {
+        pI,
+        p0,
+        p1,
+        p2
+    };
 
 private:
     ControlLines *_controlLines;
     EightBitBus *_cdataBus;
-    StepCallbackFunc _stepCallback;
+
+    Phase _phase = pI;
+    bool newPhase = true;
 
     byte _pc = 0;
     byte _ir = 0;
@@ -25,20 +33,24 @@ private:
     bool executePhase(unsigned long doneFlag);
     void pulseClock();
     void step(unsigned long controlLineBits, unsigned int delayMicros = 1);
+    bool executePhaseStep(unsigned long doneFlag, bool &error);
+    void announcePhaseStart(Phase phase);
+    void announcePhaseEnd(Phase phase);
+    const char *PhaseToText(Phase phase);
+    bool p0Fetch();
+    void setMAR(byte value);
 
 public:
     Controller(ControlLines *controlLines,
-               EightBitBus *cdataBus,
-               StepCallbackFunc stepCallback);
-    void setMAR(byte value);
-    bool p0Fetch();
-    bool pInit();
-    bool p1Addr();
-    bool p2Op();
+               EightBitBus *cdataBus);
     byte getIR();
     byte getPC();
     byte getCUAddr();
+
+    void reset();
     void run();
+    void go();
+    void uStep(bool &programComplete, bool &error);
 };
 
 #endif

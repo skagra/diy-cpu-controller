@@ -10,26 +10,11 @@
 #include "Debug.h"
 
 #define BAUD_RATE 57600
-
-#define SLOW_MOTION_MILLIS 1000
-#define MENU_INPUT_TIMEOUT_MILLIS 10000
-
-#define ADDR_MODE_INVALID 255
-
-unsigned int slowMotionMillis = 0;
-bool waitForKeyPress = false;
-unsigned long iterations = 0;
-bool testMode = false;
+#define SLOW_MOTION_MILLIS 500
 
 EightBitBus *cdataBus = new EightBitBus(DATA_BUS_PIN_LOW);
 ControlLines *controlLines = new ControlLines();
-Controller *controller = new Controller(controlLines, cdataBus, step);
-
-void step()
-{
-    delay(slowMotionMillis);
-    waitForKey();
-}
+Controller *controller = new Controller(controlLines, cdataBus);
 
 void setup()
 {
@@ -37,85 +22,132 @@ void setup()
 
     while (!Serial)
         delay(100);
+
+    Serial.println("DIY CPU Controller/Monitor");
+    Serial.println();
+    help();
 }
 
-void menu()
-{
-    Serial.setTimeout(MENU_INPUT_TIMEOUT_MILLIS);
+bool slowMotion = false;
+bool verbose = false;
 
-    bool gotOption = false;
-    while (!gotOption)
+void help()
+{
+    Serial.println("h => Print this help message.");
+    Serial.println("v => Toggle verbose mode.");
+    Serial.println("z => Toggle slow motion mode.");
+    Serial.println("x => Reset.");
+    Serial.println("r => Run.");
+    Serial.println("c => Continue.");
+    Serial.println("s => Single step.");
+    Serial.println();
+}
+
+void execution()
+{
+    bool programComplete;
+    bool error;
+
+    while (true)
     {
-        Serial.println(F("Select mode: r (run), z (slow motion), s (single step), t (test)"));
         while (Serial.available() == 0)
             delay(100);
-        byte option = Serial.read();
 
-        gotOption = true;
+        char option = Serial.read();
+
         switch (option)
         {
-        case 'r':
-            // Defaults are correct
-            Serial.println(F("Normal run mode."));
-            slowMotionMillis = 0;
-            waitForKeyPress = false;
+        case 'h':
+            help();
+            break;
+        case 'v':
+            verbose = !verbose;
+            Serial.print("Verbose mode ");
+            Serial.println(verbose ? "on" : "off");
             break;
         case 'z':
-            Serial.println(F("Slow motion mode."));
-            slowMotionMillis = SLOW_MOTION_MILLIS;
-            waitForKeyPress = false;
+            slowMotion = !slowMotion;
+            Serial.print("Slow motion mode ");
+            Serial.println(slowMotion ? "on" : "off");
+            break;
+        case 'r':
+            Serial.println("Run");
+            run();
+            break;
+        case 'c':
+            Serial.println("Continue");
+            go();
+            break;
+        case 'x':
+            Serial.println("Reset");
+            controller->reset();
             break;
         case 's':
-            Serial.println(F("Single step mode."));
-            slowMotionMillis = 0;
-            waitForKeyPress = true;
-            break;
-        case 't':
-            Serial.println(F("Test mode."));
-            slowMotionMillis = 0;
-            waitForKeyPress = false;
-            testMode = true;
-            iterations = 0;
+            controller->uStep(programComplete, error);
+            if (error)
+            {
+                reportError();
+            }
             break;
         default:
-            gotOption = false;
+            Serial.println("Invalid option");
+            Serial.println();
+            help();
         }
+    }
+}
+
+void run()
+{
+    controller->reset();
+    go();
+}
+
+void reportError()
+{
+    Serial.println();
+    Serial.println("===============");
+    Serial.println("==== ERROR ====");
+    debugPrint("IR", controller->getIR());
+    debugPrint("PC", controller->getPC());
+    debugPrint("cuaddr", controller->getCUAddr());
+    Serial.println("===============");
+    Serial.println();
+}
+
+void go()
+{
+    bool done = false;
+    bool error = false;
+
+    while (!done && !error)
+    {
+        controller->uStep(done, error);
+        if (slowMotion)
+        {
+            delay(SLOW_MOTION_MILLIS);
+        }
+    }
+
+    Serial.println("Run complete");
+    Serial.println();
+
+    if (error)
+    {
+        reportError();
     }
 }
 
 void waitForKey()
 {
-    if (waitForKeyPress)
+    while (Serial.read() == -1)
     {
-        while (Serial.read() == -1)
-        {
-            delay(100);
-        }
+        delay(100);
     }
 }
 
 void loop()
 {
-    controller->pInit();
-
-    if (!testMode)
-    {
-        menu();
-        waitForKey();
-    }
-
-    controller->run();
-
-    iterations++;
-
-    if (!testMode)
-    {
-        Serial.println("Press key to reset");
-
-        while (Serial.read() == -1)
-        {
-            delay(100);
-        }
-    }
-    waitForKeyPress = false;
+    execution();
+    waitForKey();
 }
