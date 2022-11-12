@@ -6,8 +6,7 @@
 #include "Controller.h"
 #include "AluOps.h"
 #include "Pins.h"
-
-#include "Debug.h"
+#include "Printer.h"
 
 #define BAUD_RATE 57600
 #define SLOW_MOTION_MILLIS 500
@@ -16,6 +15,9 @@ EightBitBus *cdataBus = new EightBitBus(DATA_BUS_PIN_LOW);
 ControlLines *controlLines = new ControlLines();
 Controller *controller = new Controller(controlLines, cdataBus);
 
+bool slowMotion = false;
+bool verbose = true;
+
 void setup()
 {
     Serial.begin(BAUD_RATE);
@@ -23,24 +25,24 @@ void setup()
     while (!Serial)
         delay(100);
 
-    Serial.println("DIY CPU Controller/Monitor");
-    Serial.println();
+    Printer::SetVerbosity(Printer::Verbosity::all);
+
+    Printer::Println("DIY CPU Controller/Monitor");
+    Printer::Println();
     help();
 }
 
-bool slowMotion = false;
-bool verbose = false;
-
 void help()
 {
-    Serial.println("h => Print this help message.");
-    Serial.println("v => Toggle verbose mode.");
-    Serial.println("z => Toggle slow motion mode.");
-    Serial.println("x => Reset.");
-    Serial.println("r => Run.");
-    Serial.println("c => Continue.");
-    Serial.println("s => Single step.");
-    Serial.println();
+    Printer::Println("h => Print this help message.");
+    Printer::Println("v => Toggle verbose mode.");
+    Printer::Println("z => Toggle slow motion mode.");
+    Printer::Println("x => Reset.");
+    Printer::Println("r => Run.");
+    Printer::Println("c => Continue.");
+    Printer::Println("s => Single step.");
+    Printer::Println("t => Test mode (continuous run)");
+    Printer::Println();
 }
 
 void execution()
@@ -62,24 +64,32 @@ void execution()
             break;
         case 'v':
             verbose = !verbose;
-            Serial.print("Verbose mode ");
-            Serial.println(verbose ? "on" : "off");
+            Printer::Print("Verbose mode ");
+            Printer::Println(verbose ? "on" : "off");
+            if (verbose)
+            {
+                Printer::SetVerbosity(Printer::Verbosity::all);
+            }
+            else
+            {
+                Printer::SetVerbosity(Printer::Verbosity::minimal);
+            }
             break;
         case 'z':
             slowMotion = !slowMotion;
-            Serial.print("Slow motion mode ");
-            Serial.println(slowMotion ? "on" : "off");
+            Printer::Print("Slow motion mode ");
+            Printer::Println(slowMotion ? "on" : "off");
             break;
         case 'r':
-            Serial.println("Run");
+            Printer::Println("Run");
             run();
             break;
         case 'c':
-            Serial.println("Continue");
+            Printer::Println("Continue");
             go();
             break;
         case 'x':
-            Serial.println("Reset");
+            Printer::Println("Reset");
             controller->reset();
             break;
         case 's':
@@ -89,9 +99,13 @@ void execution()
                 reportError();
             }
             break;
+        case 't':
+            Printer::Println("Continuous test");
+            test();
+            break;
         default:
-            Serial.println("Invalid option");
-            Serial.println();
+            Printer::Println("Invalid option");
+            Printer::Println();
             help();
         }
     }
@@ -105,14 +119,14 @@ void run()
 
 void reportError()
 {
-    Serial.println();
-    Serial.println("===============");
-    Serial.println("==== ERROR ====");
-    debugPrint("IR", controller->getIR());
-    debugPrint("PC", controller->getPC());
-    debugPrint("cuaddr", controller->getCUAddr());
-    Serial.println("===============");
-    Serial.println();
+    Printer::Println();
+    Printer::Println("===============");
+    Printer::Println("==== ERROR ====");
+    Printer::Print("IR", controller->getIR());
+    Printer::Print("PC", controller->getPC());
+    Printer::Print("cuaddr", controller->getCUAddr());
+    Printer::Println("===============");
+    Printer::Println();
 }
 
 void go()
@@ -129,13 +143,34 @@ void go()
         }
     }
 
-    Serial.println("Run complete");
-    Serial.println();
+    Printer::Println("Run complete");
+    Printer::Println();
 
     if (error)
     {
         reportError();
     }
+}
+
+void test()
+{
+    bool done = false;
+    bool error = false;
+
+    while (!error)
+    {
+        done = false;
+        controller->reset();
+        while (!done && !error)
+        {
+            controller->uStep(done, error);
+        }
+        if (!verbose)
+        {
+            Printer::Print(".");
+        }
+    }
+    reportError();
 }
 
 void waitForKey()

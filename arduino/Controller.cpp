@@ -2,7 +2,7 @@
 
 #include "Controller.h"
 #include "Pins.h"
-#include "Debug.h"
+#include "Printer.h"
 
 #include "uc/mModeDecoder.h"
 #include "uc/mOpDecoder.h"
@@ -57,7 +57,7 @@ void Controller::step(unsigned long controlLineBits, unsigned int delayMicros)
 
 void Controller::setMAR(byte value)
 {
-    debugPrint("Setting MAR", "MAR", value);
+    Printer::Print("Setting MAR", "MAR", value, Printer::Verbosity::verbose);
     _cdataBus->set(value);
     step(MAR_LD_CADDR | CDATA_TO_CADDR);
     _cdataBus->detach();
@@ -67,7 +67,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
 {
     bool done = false;
 
-    debugPrint("cuaddr", _cuaddr);
+    Printer::Print("cuaddr", _cuaddr, Printer::Verbosity::verbose);
 
     error = _cuaddr == 0xFF;
 
@@ -79,7 +79,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
             pgm_read_byte_near(uROM_2 + _cuaddr),
             pgm_read_byte_near(uROM_1 + _cuaddr));
 
-        debugPrint("Control lines", (unsigned long)controlLines, BASE_BIN, true);
+        Printer::Print("Control lines", (unsigned long)controlLines, Printer::Verbosity::verbose, Printer::Base::BASE_BIN, true);
 
         error = controlLines == 0xFF;
 
@@ -94,7 +94,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
             if (controlLines & PC_INC)
             {
                 _pc++;
-                debugPrint("Incremented PC", "PC", _pc);
+                Printer::Print("Incremented PC", "PC", _pc, Printer::Verbosity::verbose);
             }
 
             if (controlLines)
@@ -106,7 +106,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
 
             if (!done)
             {
-                debugPrintln();
+                Printer::Println(Printer::Verbosity::verbose);
             }
         }
     }
@@ -135,27 +135,27 @@ const char *Controller::PhaseToText(Phase phase)
 
 void Controller::announcePhaseStart(Phase phase)
 {
-    Serial.print(PhaseToText(phase));
-    Serial.println(" --->");
+    Printer::Println(PhaseToText(phase), Printer::Verbosity::verbose);
+    Printer::Println(" --->", Printer::Verbosity::verbose);
 }
 
 void Controller::announcePhaseEnd(Phase phase)
 {
-    Serial.print("<--- ");
-    Serial.println(PhaseToText(phase));
-    Serial.println();
+    Printer::Println("<--- ", Printer::Verbosity::verbose);
+    Printer::Println(PhaseToText(phase), Printer::Verbosity::verbose);
+    Printer::Println(Printer::Verbosity::verbose);
 }
 
 void Controller::uStep(bool &programComplete, bool &error)
 {
     bool phaseDone = false;
 
-    if (newPhase)
+    if (_newPhase)
     {
         if (_phase == Phase::p0)
         {
-            Serial.println("================================");
-            Serial.println();
+            Printer::Println("================================", Printer::Verbosity::verbose);
+            Printer::Println(Printer::Verbosity::verbose);
         }
         announcePhaseStart(_phase);
     }
@@ -163,9 +163,9 @@ void Controller::uStep(bool &programComplete, bool &error)
     switch (_phase)
     {
     case Phase::pI:
-        if (newPhase)
+        if (_newPhase)
         {
-            newPhase = false;
+            _newPhase = false;
         }
 
         phaseDone = executePhaseStep(uP0, error);
@@ -175,7 +175,7 @@ void Controller::uStep(bool &programComplete, bool &error)
             announcePhaseEnd(_phase);
 
             _phase = p0;
-            newPhase = true;
+            _newPhase = true;
         }
         break;
 
@@ -186,13 +186,13 @@ void Controller::uStep(bool &programComplete, bool &error)
         announcePhaseEnd(_phase);
 
         _phase = p1;
-        newPhase = true;
+        _newPhase = true;
 
         break;
     case Phase::p1:
-        if (newPhase)
+        if (_newPhase)
         {
-            newPhase = false;
+            _newPhase = false;
             _cuaddr = addrModeDecode();
         }
 
@@ -202,13 +202,13 @@ void Controller::uStep(bool &programComplete, bool &error)
         {
             announcePhaseEnd(_phase);
             _phase = p2;
-            newPhase = true;
+            _newPhase = true;
         }
         break;
     case Phase::p2:
-        if (newPhase)
+        if (_newPhase)
         {
-            newPhase = false;
+            _newPhase = false;
             _cuaddr = opDecode();
         }
         phaseDone = executePhaseStep(uP0, error);
@@ -216,7 +216,7 @@ void Controller::uStep(bool &programComplete, bool &error)
         {
             announcePhaseEnd(_phase);
             _phase = p0;
-            newPhase = true;
+            _newPhase = true;
         }
         break;
     }
@@ -226,8 +226,8 @@ bool Controller::p0Fetch()
 {
     bool error = false;
 
-    debugPrint("PC", _pc);
-    debugPrintln();
+    Printer::Print("PC", _pc, Printer::Verbosity::verbose);
+    Printer::Println(Printer::Verbosity::verbose);
 
     // Set MAR to pc
     setMAR(_pc);
@@ -244,8 +244,8 @@ bool Controller::p0Fetch()
     {
         _pc++;
 
-        debugPrintln();
-        debugPrint("IR", _ir);
+        Printer::Println(Printer::Verbosity::verbose);
+        Printer::Print("IR", _ir, Printer::Verbosity::verbose);
     }
 
     return error;
@@ -260,14 +260,12 @@ byte Controller::addrModeDecode()
 unsigned long Controller::makeControlLines(byte rom4, byte rom3, byte rom2, byte rom1)
 {
     unsigned long result = ((unsigned long)rom4) << 24 | ((unsigned long)rom3) << 16 | ((unsigned long)rom2) << 8 | rom1;
-
     return result;
 }
 
 byte Controller::opDecode()
 {
     byte result = pgm_read_byte_near(mOpDecoder + _ir);
-
     return result;
 }
 
@@ -296,15 +294,15 @@ void Controller::go()
 
     if (error)
     {
-        Serial.println();
-        Serial.println("===============");
-        Serial.println("==== ERROR ====");
-        debugPrintln("Error condition: ");
-        debugPrint("IR", _ir, BASE_HEX, false);
-        debugPrint(", PC", _pc, BASE_HEX, false);
-        debugPrint(", cuaddr", _cuaddr, BASE_HEX, true);
-        Serial.println("===============");
-        Serial.println();
+        Printer::Println();
+        Printer::Println("===============");
+        Printer::Println("==== ERROR ====");
+        Printer::Println("Error condition: ");
+        Printer::Print("IR", _ir, Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::Print(", PC", _pc, Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::Print(", cuaddr", _cuaddr, Printer::Verbosity::all, Printer::Base::BASE_HEX, true);
+        Printer::Println("===============");
+        Printer::Println();
 
         while (true)
         {

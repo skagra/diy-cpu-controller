@@ -1,7 +1,7 @@
 #include "ControlLines.h"
 #include "Pins.h"
 
-#include "Debug.h"
+#include "Printer.h"
 
 ControlLines::ControlLines()
 {
@@ -68,18 +68,18 @@ const char *decoder[] = {
 void ControlLines::decode(unsigned long lines)
 {
     bool printing = false;
-    debugPrint("Decoded: ");
+    Printer::Print("Decoded: ", Printer::Verbosity::verbose);
     for (int bit = 0; bit < 32; bit++)
     {
         if ((lines >> bit) & 1UL)
         {
             if (printing)
             {
-                debugPrint(" | ");
+                Printer::Print(" | ", Printer::Verbosity::verbose);
             }
-            debugPrint(decoder[bit]);
+            Printer::Print(decoder[bit], Printer::Verbosity::verbose);
             printing = true;
         }
     }
-    debugPrintln();
+    Printer::Println(Printer::Verbosity::verbose);
 }

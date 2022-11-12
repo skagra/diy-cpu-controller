@@ -20,7 +20,7 @@ private:
     EightBitBus *_cdataBus;
 
     Phase _phase = pI;
-    bool newPhase = true;
+    bool _newPhase = true;
 
     byte _pc = 0;
     byte _ir = 0;
