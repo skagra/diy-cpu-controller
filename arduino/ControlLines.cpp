@@ -3,35 +3,7 @@
 
 #include "Printer.h"
 
-ControlLines::ControlLines()
-{
-    pinMode(SHIFT_DATA_PIN, OUTPUT);
-    pinMode(SHIFT_CLK_PIN, OUTPUT);
-    pinMode(SHIFT_LATCH_PIN, OUTPUT);
-
-    reset();
-}
-
-void ControlLines::set(unsigned long lines)
-{
-    decode(lines);
-
-    digitalWrite(SHIFT_LATCH_PIN, LOW);
-
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)lines);
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 8));
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 16));
-    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 24));
-
-    digitalWrite(SHIFT_LATCH_PIN, HIGH);
-}
-
-void ControlLines::reset()
-{
-    set(0);
-}
-
-const char *decoder[] = {
+const char *ControlLines::decoder[] = {
     "CDATA_LD_0",
     "CDATA_TO_CADDR",
     "MEM_LD_XDATA",
@@ -64,6 +36,34 @@ const char *decoder[] = {
     "uP1",
     "uP2",
     "uZJMP"};
+
+ControlLines::ControlLines()
+{
+    pinMode(SHIFT_DATA_PIN, OUTPUT);
+    pinMode(SHIFT_CLK_PIN, OUTPUT);
+    pinMode(SHIFT_LATCH_PIN, OUTPUT);
+
+    reset();
+}
+
+void ControlLines::set(unsigned long lines)
+{
+    decode(lines);
+
+    digitalWrite(SHIFT_LATCH_PIN, LOW);
+
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)lines);
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 8));
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 16));
+    shiftOut(SHIFT_DATA_PIN, SHIFT_CLK_PIN, MSBFIRST, (byte)(lines >> 24));
+
+    digitalWrite(SHIFT_LATCH_PIN, HIGH);
+}
+
+void ControlLines::reset()
+{
+    set(0);
+}
 
 void ControlLines::decode(unsigned long lines)
 {

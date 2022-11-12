@@ -45,11 +45,13 @@
 
 class ControlLines
 {
+private:
+    static const char *decoder[];
+
 public:
     ControlLines();
     void reset();
     void set(unsigned long lines);
-    // void decode(unsigned long match, unsigned long lines, const char *value);
     void decode(unsigned long lines);
 };
 
