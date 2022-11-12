@@ -154,6 +154,7 @@ void go()
 
 void test()
 {
+    unsigned long iteration = 0;
     bool done = false;
     bool error = false;
 
@@ -165,9 +166,15 @@ void test()
         {
             controller->uStep(done, error);
         }
+        iteration++;
         if (!verbose)
         {
-            Printer::Print(".");
+            Serial.print(".");
+            if (iteration % 100 == 0)
+            {
+                Serial.println();
+                Serial.println(iteration);
+            }
         }
     }
     reportError();
@@ -184,5 +191,4 @@ void waitForKey()
 void loop()
 {
     execution();
-    waitForKey();
 }
