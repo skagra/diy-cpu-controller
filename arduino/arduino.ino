@@ -44,6 +44,7 @@ void help()
     Printer::Println("c => Continue.");
     Printer::Println("s => Single step.");
     Printer::Println("t => Test mode (continuous run)");
+    Printer::Println("b [XX] => Set/clear breakpoint.");
     Printer::Println();
 }
 
