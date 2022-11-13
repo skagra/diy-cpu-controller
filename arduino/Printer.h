@@ -1,5 +1,5 @@
-#ifndef __DOT_H_
-#define __DOT_H_
+#ifndef _PRINTER_DOT_H_
+#define _PRINTER_DOT_H_
 
 #include <Arduino.h>
 

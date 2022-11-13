@@ -26,6 +26,9 @@ private:
     byte _ir = 0;
     byte _cuaddr = 0;
 
+    bool _mcBreakpointSet;
+    byte _mcBreakpoint;
+
     byte opDecode();
     byte addrModeDecode();
 
@@ -50,7 +53,10 @@ public:
     void reset();
     void run();
     void go();
-    void uStep(bool &programComplete, bool &error);
+    void uStep(bool &programComplete, bool &mcBreak, bool &error);
+
+    void setMCBreakpoint(byte breakpoint);
+    void clearMCBreakpoint();
 };
 
 #endif

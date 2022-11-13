@@ -25,6 +25,17 @@ Controller::Controller(ControlLines *controlLines, EightBitBus *cdataBus)
     digitalWrite(CLOCK_PIN, LOW);
 }
 
+void Controller::setMCBreakpoint(byte breakpoint)
+{
+    _mcBreakpoint = breakpoint;
+    _mcBreakpointSet = true;
+}
+
+void Controller::clearMCBreakpoint()
+{
+    _mcBreakpointSet = false;
+}
+
 byte Controller::getCUAddr()
 {
     return _cuaddr;
@@ -146,7 +157,7 @@ void Controller::announcePhaseEnd(Phase phase)
     Printer::Println(Printer::Verbosity::verbose);
 }
 
-void Controller::uStep(bool &programComplete, bool &error)
+void Controller::uStep(bool &programComplete, bool &mcBreak, bool &error)
 {
     bool phaseDone = false;
 
@@ -180,6 +191,8 @@ void Controller::uStep(bool &programComplete, bool &error)
         break;
 
     case Phase::p0:
+        mcBreak = _mcBreakpointSet && _pc == _mcBreakpoint;
+
         error = p0Fetch();
         programComplete = _ir == 0;
 
@@ -286,10 +299,17 @@ void Controller::go()
 {
     bool done = false;
     bool error = false;
+    bool mcBreak = false;
 
-    while (!done && !error)
+    while (!done && !error && !mcBreak)
     {
-        uStep(done, error);
+        uStep(done, mcBreak, error);
+    }
+
+    if (mcBreak)
+    {
+        Printer::Println();
+        Printer::Print("MC Breakpoint hit at");
     }
 
     if (error)
