@@ -402,11 +402,13 @@ void Controller::go()
     {
         Printer::println();
         Printer::println("===============");
-        Printer::println("==== ERROR ====");
-        Printer::println("Error condition: ");
-        Printer::print("IR", _ir, Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
-        Printer::print(", PC", _pc, Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
-        Printer::print(", cuaddr", _cuaddr, Printer::Verbosity::all, Printer::Base::BASE_HEX, true);
+        Printer::println("Halted due to ERROR condition.");
+        Printer::print("cuaddr", getCUAddr());
+        Printer::print("PC", getPC(), Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::print("IR", getIR(), Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::print("A", getA(), Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::print("X", getX(), Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
+        Printer::print("ALU", getALUOut(), Printer::Verbosity::all, Printer::Base::BASE_HEX, false);
         Printer::println("===============");
         Printer::println();
 
