@@ -27,25 +27,26 @@ void setup()
 
     Serial.setTimeout(-1);
 
-    Printer::SetVerbosity(Printer::Verbosity::all);
+    Printer::setVerbosity(Printer::Verbosity::all);
 
-    Printer::Println("DIY CPU Controller/Monitor");
-    Printer::Println();
+    Printer::println("DIY CPU Controller/Monitor");
+    Printer::println();
     help();
 }
 
 void help()
 {
-    Printer::Println("h => Print this help message.");
-    Printer::Println("v => Toggle verbose mode.");
-    Printer::Println("z => Toggle slow motion mode.");
-    Printer::Println("x => Reset.");
-    Printer::Println("r => Run.");
-    Printer::Println("c => Continue.");
-    Printer::Println("s => Single step.");
-    Printer::Println("t => Test mode (continuous run)");
-    Printer::Println("b [XX] => Set/clear breakpoint.");
-    Printer::Println();
+    Printer::println("h => Print this help message.");
+    Printer::println("v => Toggle verbose mode.");
+    Printer::println("z => Toggle slow motion mode.");
+    Printer::println("x => Reset.");
+    Printer::println("r => Run.");
+    Printer::println("c => Continue.");
+    Printer::println("s => Single step.");
+    Printer::println("t => Test mode (continuous run)");
+    Printer::println("b [XX] => Set/clear breakpoint.");
+    Printer::println("d => Dump (report) state.");
+    Printer::println();
 }
 
 void Beep()
@@ -189,41 +190,39 @@ void execution()
             switch (option)
             {
             case 'd':
-                Printer::Print("A", controller->getA());
-                Printer::Print("X", controller->getX());
-                Printer::Print("ALU", controller->getALUOut());
+                reportState();
                 break;
             case 'h':
                 help();
                 break;
             case 'v':
                 verbose = !verbose;
-                Printer::Print("Verbose mode ");
-                Printer::Println(verbose ? "on" : "off");
+                Printer::print("Verbose mode ");
+                Printer::println(verbose ? "on" : "off");
                 if (verbose)
                 {
-                    Printer::SetVerbosity(Printer::Verbosity::all);
+                    Printer::setVerbosity(Printer::Verbosity::all);
                 }
                 else
                 {
-                    Printer::SetVerbosity(Printer::Verbosity::minimal);
+                    Printer::setVerbosity(Printer::Verbosity::minimal);
                 }
                 break;
             case 'z':
                 slowMotion = !slowMotion;
-                Printer::Print("Slow motion mode ");
-                Printer::Println(slowMotion ? "on" : "off");
+                Printer::print("Slow motion mode ");
+                Printer::println(slowMotion ? "on" : "off");
                 break;
             case 'r':
-                Printer::Println("Run");
+                Printer::println("Run");
                 run();
                 break;
             case 'c':
-                Printer::Println("Continue");
+                Printer::println("Continue");
                 go();
                 break;
             case 'x':
-                Printer::Println("Reset");
+                Printer::println("Reset");
                 controller->reset();
                 break;
             case 's':
@@ -237,14 +236,14 @@ void execution()
                 if (charsRead == 2)
                 {
                     controller->clearMCBreakpoint();
-                    Printer::Println("Breakpoint cleared");
+                    Printer::println("Breakpoint cleared");
                 }
                 else
                 {
                     if (readHex(inputBuffer + 1, charsRead - 1, byteRead))
                     {
                         controller->setMCBreakpoint(byteRead);
-                        Printer::Print("Breakpoint set", byteRead);
+                        Printer::print("Breakpoint set", byteRead);
                     }
                     else
                     {
@@ -254,12 +253,12 @@ void execution()
                 }
                 break;
             case 't':
-                Printer::Println("Continuous test");
+                Printer::println("Continuous test");
                 test();
                 break;
             default:
-                Printer::Println("Invalid option");
-                Printer::Println();
+                Printer::println("Invalid option");
+                Printer::println();
                 help();
             }
         }
@@ -279,14 +278,22 @@ void run()
 
 void reportError()
 {
-    Printer::Println();
-    Printer::Println("===============");
-    Printer::Println("==== ERROR ====");
-    Printer::Print("IR", controller->getIR());
-    Printer::Print("PC", controller->getPC());
-    Printer::Print("cuaddr", controller->getCUAddr());
-    Printer::Println("===============");
-    Printer::Println();
+    Printer::println();
+    Printer::println("===============");
+    Printer::println("==== ERROR ====");
+    reportState();
+    Printer::println("===============");
+    Printer::println();
+}
+
+void reportState()
+{
+    Printer::print("cuaddr", controller->getCUAddr());
+    Printer::print("PC", controller->getPC());
+    Printer::print("IR", controller->getIR());
+    Printer::print("A", controller->getA());
+    Printer::print("X", controller->getX());
+    Printer::print("ALU", controller->getALUOut());
 }
 
 void go()
@@ -298,6 +305,7 @@ void go()
     while (!done && !error && !mcBreak)
     {
         controller->uStep(done, mcBreak, error);
+
         if (slowMotion)
         {
             delay(SLOW_MOTION_MILLIS);
@@ -310,13 +318,13 @@ void go()
     }
     else if (mcBreak)
     {
-        Printer::Println();
-        Printer::Println("Stopped at breakpoint");
+        Printer::println();
+        Printer::println("Stopped at breakpoint");
     }
     else
     {
-        Printer::Println("Run complete");
-        Printer::Println();
+        Printer::println("Run complete");
+        Printer::println();
     }
 }
 

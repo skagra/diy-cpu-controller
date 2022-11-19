@@ -39,33 +39,33 @@ private:
     static void PrintHex(byte value, Verbosity verbosity, bool ms = true);
 
 public:
-    static void SetVerbosity(Verbosity verbosity);
+    static void setVerbosity(Verbosity verbosity);
 
-    static void Print(const char *message, Verbosity verbosity = Verbosity::minimal);
+    static void print(const char *message, Verbosity verbosity = Verbosity::minimal);
 
-    static void Println(const char *message, Verbosity verbosity = Verbosity::minimal);
+    static void println(const char *message, Verbosity verbosity = Verbosity::minimal);
 
-    static void Println(Verbosity verbosity = Verbosity::minimal);
+    static void println(Verbosity verbosity = Verbosity::minimal);
 
-    static void PrintBin(unsigned int value, Verbosity verbosity = Verbosity::minimal);
+    static void printBin(unsigned int value, Verbosity verbosity = Verbosity::minimal);
 
-    static void PrintBin(unsigned long value, Verbosity verbosity = Verbosity::minimal);
+    static void printBin(unsigned long value, Verbosity verbosity = Verbosity::minimal);
 
-    static void PrintHex(unsigned int value, Verbosity verbosity = Verbosity::minimal);
+    static void printHex(unsigned int value, Verbosity verbosity = Verbosity::minimal);
 
-    static void PrintHex(unsigned long value, Verbosity verbosity = Verbosity::minimal);
+    static void printHex(unsigned long value, Verbosity verbosity = Verbosity::minimal);
 
-    static void Print(const char *message, const char *name, byte value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *message, const char *name, byte value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 
-    static void Print(const char *name, byte value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *name, byte value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 
-    static void Print(const char *message, const char *name, unsigned int value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *message, const char *name, unsigned int value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 
-    static void Print(const char *name, unsigned int value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *name, unsigned int value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 
-    static void Print(const char *message, const char *name, unsigned long value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *message, const char *name, unsigned long value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 
-    static void Print(const char *name, unsigned long value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
+    static void print(const char *name, unsigned long value, Verbosity verbosity = Verbosity::minimal, Base base = BASE_HEX, bool newline = true);
 };
 
 #endif

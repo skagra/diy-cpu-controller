@@ -68,18 +68,18 @@ void ControlLines::reset()
 void ControlLines::decode(unsigned long lines)
 {
     bool printing = false;
-    Printer::Print("Decoded: ", Printer::Verbosity::verbose);
+    Printer::print("Decoded: ", Printer::Verbosity::verbose);
     for (int bit = 0; bit < 32; bit++)
     {
         if ((lines >> bit) & 1UL)
         {
             if (printing)
             {
-                Printer::Print(" | ", Printer::Verbosity::verbose);
+                Printer::print(" | ", Printer::Verbosity::verbose);
             }
-            Printer::Print(decoder[bit], Printer::Verbosity::verbose);
+            Printer::print(decoder[bit], Printer::Verbosity::verbose);
             printing = true;
         }
     }
-    Printer::Println(Printer::Verbosity::verbose);
+    Printer::println(Printer::Verbosity::verbose);
 }
