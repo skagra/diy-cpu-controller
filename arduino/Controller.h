@@ -26,6 +26,8 @@ private:
     byte _ir = 0;
     byte _cuaddr = 0;
 
+    unsigned long _currentControlLines;
+
     bool _mcBreakpointSet;
     byte _mcBreakpoint;
 
@@ -42,6 +44,7 @@ private:
     const char *PhaseToText(Phase phase);
     bool p0Fetch();
     void setMAR(byte value);
+    byte cuaddrNext(unsigned long currentControlLines);
 
 public:
     Controller(ControlLines *controlLines,
@@ -49,6 +52,10 @@ public:
     byte getIR();
     byte getPC();
     byte getCUAddr();
+    byte getA();
+    byte getX();
+    byte getALUOut();
+    bool getPZ();
 
     void reset();
     void run();

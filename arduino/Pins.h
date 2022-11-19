@@ -9,4 +9,6 @@
 
 #define CLOCK_PIN 13
 
+#define PZ_PIN 14
+
 #endif

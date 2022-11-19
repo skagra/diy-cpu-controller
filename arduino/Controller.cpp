@@ -22,6 +22,7 @@ Controller::Controller(ControlLines *controlLines, EightBitBus *cdataBus)
     _cdataBus = cdataBus;
 
     pinMode(CLOCK_PIN, OUTPUT);
+    pinMode(PZ_PIN, INPUT);
     digitalWrite(CLOCK_PIN, LOW);
 }
 
@@ -74,6 +75,47 @@ void Controller::setMAR(byte value)
     _cdataBus->detach();
 }
 
+byte Controller::cuaddrNext(unsigned long currentControlLines)
+{
+    byte result;
+
+    if (currentControlLines & uJMP)
+    {
+        // Absolute jump
+        result = uROM_0[_cuaddr];
+    }
+    else if (currentControlLines & uZJMP)
+    {
+        // Jump based on Z flag
+        bool pz = getPZ();
+        if ((currentControlLines & uJMPINV) && !pz)
+        {
+            // Jump on not zero
+            result = uROM_0[_cuaddr];
+        }
+        else if (pz)
+        {
+            // Jump if zero
+            Serial.println("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX BEQ");
+            result = pgm_read_byte_near(uROM_0 + _cuaddr);
+            Serial.println(_cuaddr, HEX);
+            Serial.println(result, HEX);
+        }
+        else
+        {
+            // Default
+            result = _cuaddr + 1;
+        }
+    }
+    else
+    {
+        // Default
+        result = _cuaddr + 1;
+    }
+
+    return result;
+}
+
 bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
 {
     bool done = false;
@@ -84,36 +126,61 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
 
     if (!error)
     {
-        unsigned long controlLines = makeControlLines(
+        _currentControlLines = makeControlLines(
             pgm_read_byte_near(uROM_4 + _cuaddr),
             pgm_read_byte_near(uROM_3 + _cuaddr),
             pgm_read_byte_near(uROM_2 + _cuaddr),
             pgm_read_byte_near(uROM_1 + _cuaddr));
 
-        Printer::Print("Control lines", (unsigned long)controlLines, Printer::Verbosity::verbose, Printer::Base::BASE_BIN, true);
+        Printer::Print("Control lines", (unsigned long)_currentControlLines, Printer::Verbosity::verbose, Printer::Base::BASE_BIN, true);
 
-        error = controlLines == 0xFF;
+        error = _currentControlLines == 0xFF;
 
         if (!error)
         {
-            if ((controlLines & PC_TO_MAR) == PC_TO_MAR)
+            if ((_currentControlLines & PC_TO_MAR) == PC_TO_MAR)
             {
                 setMAR(_pc);
-                controlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
+                _currentControlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
             }
-            done = controlLines & doneFlag;
-            if (controlLines & PC_INC)
+
+            done = _currentControlLines & doneFlag;
+
+            if (_currentControlLines & PC_INC)
             {
                 _pc++;
                 Printer::Print("Incremented PC", "PC", _pc, Printer::Verbosity::verbose);
             }
-
-            if (controlLines)
+            else if (_currentControlLines & PC_REL_CDATA)
             {
-                step(controlLines);
+                Serial.print("---------------------XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX PC REL ");
+                Serial.println(_pc, HEX);
+                _controlLines->set(MBR_OUT_CDATA);
+
+                byte cdataVal = _cdataBus->read();
+                Serial.println(cdataVal, HEX);
+                _pc += cdataVal;
+                Serial.println(_pc, HEX);
+                _currentControlLines &= ~PC_REL_CDATA;
+            }
+            else if ((_currentControlLines & (MBR_OUT_CDATA | PC_LD_CDATA)) == (MBR_OUT_CDATA | PC_LD_CDATA))
+            {
+                Serial.print("---------------------XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX JMP ");
+                _controlLines->set(MBR_OUT_CDATA);
+                Serial.println(_pc, HEX);
+
+                _pc = _cdataBus->read();
+                Serial.println(_pc, HEX);
+
+                _currentControlLines &= ~(MBR_OUT_CDATA | PC_LD_CDATA);
             }
 
-            _cuaddr++;
+            if (_currentControlLines)
+            {
+                step(_currentControlLines);
+            }
+
+            _cuaddr = cuaddrNext(_currentControlLines);
 
             if (!done)
             {
@@ -123,6 +190,38 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
     }
 
     return done;
+}
+
+bool Controller::getPZ()
+{
+    bool result = digitalRead(PZ_PIN);
+    Serial.print("========> Z=");
+    Serial.println(result);
+    return result;
+}
+
+byte Controller::getA()
+{
+    _controlLines->set(A_OUT_CDATA);
+    byte result = _cdataBus->read();
+    _controlLines->set(_currentControlLines);
+    return result;
+}
+
+byte Controller::getX()
+{
+    _controlLines->set(X_OUT_CDATA);
+    byte result = _cdataBus->read();
+    _controlLines->set(_currentControlLines);
+    return result;
+}
+
+byte Controller::getALUOut()
+{
+    _controlLines->set(ALUR_OUT_CDATA);
+    byte result = _cdataBus->read();
+    _controlLines->set(_currentControlLines);
+    return result;
 }
 
 const char *Controller::PhaseToText(Phase phase)
@@ -146,13 +245,13 @@ const char *Controller::PhaseToText(Phase phase)
 
 void Controller::announcePhaseStart(Phase phase)
 {
-    Printer::Println(PhaseToText(phase), Printer::Verbosity::verbose);
+    Printer::Print(PhaseToText(phase), Printer::Verbosity::verbose);
     Printer::Println(" --->", Printer::Verbosity::verbose);
 }
 
 void Controller::announcePhaseEnd(Phase phase)
 {
-    Printer::Println("<--- ", Printer::Verbosity::verbose);
+    Printer::Print("<--- ", Printer::Verbosity::verbose);
     Printer::Println(PhaseToText(phase), Printer::Verbosity::verbose);
     Printer::Println(Printer::Verbosity::verbose);
 }

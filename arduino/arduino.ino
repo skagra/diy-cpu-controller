@@ -188,6 +188,11 @@ void execution()
 
             switch (option)
             {
+            case 'd':
+                Printer::Print("A", controller->getA());
+                Printer::Print("X", controller->getX());
+                Printer::Print("ALU", controller->getALUOut());
+                break;
             case 'h':
                 help();
                 break;
