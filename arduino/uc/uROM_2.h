@@ -1,6 +1,6 @@
 // This file was auto-generated - DO NOT EDIT
 // Source file: '/Development/diy-cpu/simplified/ucode/bin/uROM-2.bin'
-// Date: 28/11/2022 11:22:48
+// Date: 05/12/2022 08:28:47
 
 #ifndef _UROM_2_DOT_H_
 #define _UROM_2_DOT_H_
