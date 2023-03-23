@@ -1,2 +1,2 @@
 all:
-	make -C ./arduino
+	make -C ./controller
