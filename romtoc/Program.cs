@@ -1,12 +1,10 @@
-﻿using System.Text.RegularExpressions;
-
-public static class RomToC
+﻿public static class RomToC
 {
     private const int _valuesPerRow = 16;
 
     public static void Usage()
     {
-
+        Console.WriteLine("dotnet run <input-rom-file> [output-directory]");
     }
 
     private static string SanitizeFilename(string filename)

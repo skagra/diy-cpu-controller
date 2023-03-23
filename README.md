@@ -6,5 +6,5 @@ It is a both a stop gap until the control unit proper has been built and is a us
 
 This repository contains two projects:
 
-* `arduino` - This is the actual control unit code to be uploaded to the micro controller.
-* `romtoc` - This takes the binary microcode ROMs and decoder ROMs as built as part of the [Diy CPU](https://github.com/skagra/diy-cpu) project and creates C++ code that is compiled into the controller.
+* [arduino](arduino) - This is the actual control unit code to be uploaded to the micro controller.
+* [romtoc](romtoc) - This takes the binary microcode ROMs and decoder ROMs as built as part of the [Diy CPU](https://github.com/skagra/diy-cpu) project and creates C++ code that is compiled into the controller.
