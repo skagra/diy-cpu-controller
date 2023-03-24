@@ -2,7 +2,29 @@
 
 A micro-controller based control unit and debugger for the [Diy CPU](https://github.com/skagra/diy-cpu).
 
+At its core the controller cycles through the following actions
+
+* `P0` - Fetch cycle.
+  * Set the `MAR` to the current `PC`
+  * Read the corresponding mc opcode from the mc `ROM` into the `IR`.
+* `P1` - Addressing cycle.
+  * If this is the first ucode instruction in this phase then lookup the mc opcode in the addr decoding ROM to find the address of the appropriate `P1` ucode.
+  * *Execute* the current ucode instruction.
+  * If the current ucode instruction flags the end of the phase then move to `P2`, else continue.
+* `P2` - Function cycle.
+  * If this is the first ucode instruction in this phase then lookup the mc opcode in the function decoding ROM to find the address of the appropriate `P2` ucode.
+  * *Execute* the current ucode instruction.
+  * If the current ucode instruction flags the end of the phase then move to P0, else continue.
+
+In this context to *execute* means to:
+
+* Set control lines as per the current ucode instruction.
+* Pulse the clock.
+* The address of the next ucode instruction and set it in the ucode PC.
+
 # Functionality
+
+The controller presents an interface via a serial connection with the following options:
 
 * h => Print this help message.
 * v => Toggle verbose mode.
