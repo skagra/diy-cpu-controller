@@ -60,6 +60,7 @@ void Controller::pulseClock()
     delayMicroseconds(CLOCK_PULSE_DELAY_MICROS);
 }
 
+// Set control lines a pulse clock to execute the current ucode instruction
 void Controller::step(unsigned long controlLineBits, unsigned int delayMicros)
 {
     _controlLines->set(controlLineBits);
@@ -75,6 +76,7 @@ void Controller::setMAR(byte value)
     _cdataBus->detach();
 }
 
+// Calculate the next ucode addr
 byte Controller::cuaddrNext(unsigned long currentControlLines)
 {
     byte result;
@@ -119,10 +121,12 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
 
     Printer::print("cuaddr", _cuaddr, Printer::Verbosity::verbose);
 
+    // It is an error id we have run to the end of he ucode
     error = _cuaddr == 0xFF;
 
     if (!error)
     {
+        // Assemble a long representing the control lines from the current ucode instruction
         _currentControlLines = makeControlLines(
             pgm_read_byte_near(uROM_4 + _cuaddr),
             pgm_read_byte_near(uROM_3 + _cuaddr),
@@ -132,18 +136,26 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
         Printer::print("Control lines", (unsigned long)_currentControlLines,
                        Printer::Verbosity::verbose, Printer::Base::BASE_BIN, true);
 
+        // Uninitialized data is set to 0xFF, so retrieving 0xFF flags an error
         error = _currentControlLines == 0xFF;
 
         if (!error)
         {
+            // Move the PC to the MAR if flagged
             if ((_currentControlLines & PC_TO_MAR) == PC_TO_MAR)
             {
                 setMAR(_pc);
+                // We've dealt with what both MAR_LD_CADDR and CDATA_TO_CADDR would have done
+                // so reset both of them
                 _currentControlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
             }
 
+            // Does the ucode instruction flag to move onto the next supplied next phase
             done = _currentControlLines & doneFlag;
 
+            // PC updating
+
+            // Increment the PC if flagged
             if (_currentControlLines & PC_INC)
             {
                 _pc++;
@@ -151,7 +163,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
             }
             else if (_currentControlLines & PC_REL_CDATA)
             {
-
+                // Relative jump from value in MBR
                 _controlLines->set(MBR_OUT_CDATA);
                 _pc += _cdataBus->read();
                 _currentControlLines &= ~PC_REL_CDATA;
@@ -159,17 +171,22 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
             }
             else if ((_currentControlLines & (MBR_OUT_CDATA | PC_LD_CDATA)) == (MBR_OUT_CDATA | PC_LD_CDATA))
             {
+                // Absolute jump to value in MBR.
+                // Only if the only line set are MBR_OUT_CDATA and PC_LD_CDATA.
                 _controlLines->set(MBR_OUT_CDATA);
                 _pc = _cdataBus->read();
                 _currentControlLines &= ~(MBR_OUT_CDATA | PC_LD_CDATA);
                 Printer::print("Absolute jump", "PC", _pc, Printer::Verbosity::verbose);
             }
 
+            // Any control lines not processed internally?
             if (_currentControlLines)
             {
+                // Have the hardware process them
                 step(_currentControlLines);
             }
 
+            // Calculate next
             _cuaddr = cuaddrNext(_currentControlLines);
 
             if (!done)
@@ -243,10 +260,12 @@ void Controller::announcePhaseEnd(Phase phase)
     Printer::println(Printer::Verbosity::verbose);
 }
 
+// Run a microcode step
 void Controller::uStep(bool &programComplete, bool &mcBreak, bool &error)
 {
     bool phaseDone = false;
 
+    // Is this the first step in a new phase?
     if (_newPhase)
     {
         if (_phase == Phase::p0)
@@ -257,29 +276,39 @@ void Controller::uStep(bool &programComplete, bool &mcBreak, bool &error)
         announcePhaseStart(_phase);
     }
 
+    // What phase are we in?
     switch (_phase)
     {
     case Phase::pI:
+        // pI - One time initialization code
         if (_newPhase)
         {
             _newPhase = false;
         }
 
+        // Execute the current microcode instruction - next phase is P0
         phaseDone = executePhaseStep(uP0, error);
 
+        // If the ucode instruction moving onto the next phase
         if (phaseDone)
         {
             announcePhaseEnd(_phase);
 
+            // Flag the new phase
             _phase = p0;
             _newPhase = true;
         }
         break;
 
     case Phase::p0:
+        // p0 - fetch
         mcBreak = _mcBreakpointSet && _pc == _mcBreakpoint;
 
+        // Do current opcode - not using the ucode but doing it directly in the control
+        // MAR<-PC, MEM_OUT_XDATA | MBR_LD_XDATA, IR<-MBR_OUT_CDATA
         error = p0Fetch();
+
+        // A zero mcode instuction halts the CPU
         programComplete = _ir == 0;
 
         announcePhaseEnd(_phase);
@@ -292,13 +321,17 @@ void Controller::uStep(bool &programComplete, bool &mcBreak, bool &error)
         if (_newPhase)
         {
             _newPhase = false;
+            // First ucode instruction of p1 so find the ucode to execute the appropriate
+            // p1 based on the current mc opcode's addressing mode.
             _cuaddr = addrModeDecode();
         }
 
+        // Execute the current ucode instruction
         phaseDone = executePhaseStep(uP2, error);
 
         if (phaseDone)
         {
+            // Move to next phase (p2) if ucode instruction flags phase as done
             announcePhaseEnd(_phase);
             _phase = p2;
             _newPhase = true;
@@ -308,11 +341,14 @@ void Controller::uStep(bool &programComplete, bool &mcBreak, bool &error)
         if (_newPhase)
         {
             _newPhase = false;
+            // First ucode instruction of p2 so find the ucode to execute the appropriate
+            // p2 based on the current mc opcode function.
             _cuaddr = opDecode();
         }
         phaseDone = executePhaseStep(uP0, error);
         if (phaseDone)
         {
+            // Move to next phase (p0) if ucode instruction flags phase as done
             announcePhaseEnd(_phase);
             _phase = p0;
             _newPhase = true;
@@ -350,6 +386,7 @@ bool Controller::p0Fetch()
     return error;
 }
 
+// Locate address of the ucode for the addressing mode of the opcode in IR
 byte Controller::addrModeDecode()
 {
     byte result = pgm_read_byte_near(mModeDecoder + _ir);
@@ -362,6 +399,7 @@ unsigned long Controller::makeControlLines(byte rom4, byte rom3, byte rom2, byte
     return result;
 }
 
+// Locate address of the ucode for the function of the opcode in IR
 byte Controller::opDecode()
 {
     byte result = pgm_read_byte_near(mOpDecoder + _ir);

@@ -49,7 +49,7 @@ void help()
     Printer::println();
 }
 
-void Beep()
+void beep()
 {
     Serial.print((char)7);
 }
@@ -78,7 +78,7 @@ int readString(char *buffer, int bufferSize)
             }
             else
             {
-                Beep();
+                beep();
             }
         }
         else
@@ -90,7 +90,7 @@ int readString(char *buffer, int bufferSize)
             }
             else
             {
-                Beep();
+                beep();
             }
         }
         done = input == '\r';
@@ -247,7 +247,7 @@ void execution()
                     }
                     else
                     {
-                        Beep();
+                        beep();
                         Serial.println();
                     }
                 }
@@ -264,7 +264,7 @@ void execution()
         }
         else
         {
-            Beep();
+            beep();
             help();
         }
     }

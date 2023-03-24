@@ -49,6 +49,7 @@ private:
 public:
     Controller(ControlLines *controlLines,
                EightBitBus *cdataBus);
+
     byte getIR();
     byte getPC();
     byte getCUAddr();
@@ -57,12 +58,22 @@ public:
     byte getALUOut();
     bool getPZ();
 
+    // Reset the CPU -> jump to uCode address 0
     void reset();
+
+    // Reset and go
     void run();
+
+    // Run code until done, error or breakpoint
     void go();
+
+    // Run the current microcode step
     void uStep(bool &programComplete, bool &mcBreak, bool &error);
 
+    // Set a breakpoint at the given mc address
     void setMCBreakpoint(byte breakpoint);
+
+    // Clear the current breakpoint
     void clearMCBreakpoint();
 };
 
