@@ -150,7 +150,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
                 _currentControlLines &= ~(MAR_LD_CADDR | CDATA_TO_CADDR);
             }
 
-            // Does the ucode instruction flag to move onto the next supplied next phase
+            // Does the ucode instruction flag to move onto the next phase
             done = _currentControlLines & doneFlag;
 
             // PC updating
@@ -186,7 +186,7 @@ bool Controller::executePhaseStep(unsigned long doneFlag, bool &error)
                 step(_currentControlLines);
             }
 
-            // Calculate next
+            // Calculate next ucode addr
             _cuaddr = cuaddrNext(_currentControlLines);
 
             if (!done)
