@@ -20,19 +20,19 @@ At its core the controller cycles through the following actions
   * Set the `MAR` to the current `PC`
   * Read the corresponding mc opcode from the mc `ROM` into the `IR`.
 * `P1` - Addressing cycle.
-  * If this is the first ucode instruction in this phase then lookup the mc opcode in the addr decoding ROM to find the address of the appropriate `P1` ucode.
-  * *Execute* the current ucode instruction.
-  * If the current ucode instruction flags the end of the phase then move to `P2`, else continue.
+  * If this is the first μcode instruction in this phase then lookup the mc opcode in the addr decoding ROM to find the address of the appropriate `P1` μcode.
+  * *Execute* the current μcode instruction.
+  * If the current μcode instruction flags the end of the phase then move to `P2`, else continue.
 * `P2` - Function cycle.
-  * If this is the first ucode instruction in this phase then lookup the mc opcode in the function decoding ROM to find the address of the appropriate `P2` ucode.
-  * *Execute* the current ucode instruction.
-  * If the current ucode instruction flags the end of the phase then move to P0, else continue.
+  * If this is the first μcode instruction in this phase then lookup the mc opcode in the function decoding ROM to find the address of the appropriate `P2` μcode.
+  * *Execute* the current μcode instruction.
+  * If the current μcode instruction flags the end of the phase then move to P0, else continue.
 
 In this context to *execute* means to:
 
-* Set control lines as per the current ucode instruction.
+* Set control lines as per the current μcode instruction.
 * Pulse the clock.
-* The address of the next ucode instruction and set it in the ucode PC.
+* Calculate the address of the next μcode instruction and set it in the μcode PC.
 
 [Top](#top)
 
