@@ -1,6 +1,18 @@
+<div name="top"></div>
+
 # Controller
 
 A micro-controller based control unit and debugger for the [Diy CPU](https://github.com/skagra/diy-cpu).
+
+- [Controller](#controller)
+- [Functionality](#functionality)
+- [Circuit](#circuit)
+- [Control Lines](#control-lines)
+  - [ROM 1](#rom-1)
+  - [ROM 2](#rom-2)
+  - [ROM 3](#rom-3)
+  - [ROM 4](#rom-4)
+- [Glossary](#glossary)
 
 At its core the controller cycles through the following actions
 
@@ -22,6 +34,8 @@ In this context to *execute* means to:
 * Pulse the clock.
 * The address of the next ucode instruction and set it in the ucode PC.
 
+[Top](#top)
+
 # Functionality
 
 The controller presents an interface via a serial connection with the following options:
@@ -37,6 +51,8 @@ The controller presents an interface via a serial connection with the following 
 * b [XX] => Set/clear breakpoint.
 * d => Dump (report) state."
 
+[Top](#top)
+
 # Circuit
 
 The circuit for the control unit is build around an Arduino (micro-controller) with the addition of four `74HC595` SIPO shift registers to extend the quantity of 
@@ -49,6 +65,8 @@ Each of the shift registers is equivalent to one of the microcode ROMs in the co
 The schematic labels all control lines according to the key detailed below.
 
 In addition, the micro-controller directly takes as input the value of `PZ` and outputs a clock signal used by the CPU and surrounding circuitry.
+
+[Top](#top)
 
 # Control Lines
 
@@ -65,6 +83,8 @@ In addition, the micro-controller directly takes as input the value of `PZ` and 
 | `MBR_OUT_XDATA`  | `00000000000000000000000001000000` | `QG` | Write the `MBR` to the `XDATA` bus.         |
 | `MBR_LD_CDATA`   | `00000000000000000000000010000000` | `QH` | Load the `MBR` from the `CDATA` bus.        |
 
+[Top](#top)
+
 ## ROM 2
 
 | Name            | Bit                                | Pin  | Description                                                                                 |
@@ -77,6 +97,8 @@ In addition, the micro-controller directly takes as input the value of `PZ` and 
 | `PC_OUT_CDATA`  | `00000000000000000010000000000000` | `QF` | *Not used*                                                                                  |
 | `PC_OUT_CADDR`  | `00000000000000000100000000000000` | `QG` | Write the `PC` to the `CADDR` bus.                                                          |
 | `A_LD_CDATA`    | `00000000000000001000000000000000` | `QH` | Load `A` from the `CDATA` bus.                                                              |
+
+[Top](#top)
 
 ## ROM 3
 
@@ -91,6 +113,8 @@ In addition, the micro-controller directly takes as input the value of `PZ` and 
 | `ALUR_OUT_CDATA` | `00000000010000000000000000000000` | `QG` | Write the `ALU` output onto the `CDATA` bus. |
 | `ALUOP_0`        | `00000000100000000000000000000000` | `QH` | `ALU` operation bit 0.                       |
 
+[Top](#top)
+
 ## ROM 4
 
 | Name          | Bit                                | Pin  | Description                                                                                                                   |
@@ -103,6 +127,8 @@ In addition, the micro-controller directly takes as input the value of `PZ` and 
 | `uP1`         | `00100000000000000000000000000000` | `QF` | Continue at microcode P1 entry point (based on address mode decoded from machine code).                                       |
 | `uP2`         | `01000000000000000000000000000000` | `QG` | Continue at microcode P2 entry point (based on operation decoded from machine code).                                          |
 | `uZJMP`       | `10000000000000000000000000000000` | `QH` | Conditional microcode jump based on the `Z` value supplied to the control unit and the `uJMPINV` flag.                        |
+
+[Top](#top)
 
 # Glossary
 
@@ -121,3 +147,4 @@ In addition, the micro-controller directly takes as input the value of `PZ` and 
 | `XADDR` | External (to the CPU) address bus.          |
 | `XDATA` | External (to the CPU) data bus.             |
 
+[Top](#top)
