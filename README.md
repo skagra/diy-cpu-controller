@@ -1,6 +1,6 @@
 # DIY CPU Controller
 
-This is a micro controller based control unit for the [Diy CPU](https://github.com/skagra/diy-cpu).   
+This is a micro controller based control unit for the [Diy CPU](https://github.com/skagra/diy-cpu-meta).   
 
 It is a both a stop gap until the control unit proper has been built and is a useful debugging tool for the CPU and its microcode.
 
