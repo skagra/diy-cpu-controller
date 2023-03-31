@@ -2,7 +2,7 @@
 
 # Controller
 
-A micro-controller based control unit and debugger for the [Diy CPU](https://github.com/skagra/diy-cpu).
+A μcontroller based control unit and debugger for the [Diy CPU](https://github.com/skagra/diy-cpu-meta).
 
 - [Controller](#controller)
 - [Functionality](#functionality)
