@@ -11,7 +11,7 @@ Where
 * `input-rom-file` - File containing microcode ROM binary or decoder ROM binary.
 * `output-directory` - Directory into which to write *C++* output.  Defaults to `.`
 
-The `Makefile` in the [controller](../controller) project will automatically process the expected ROMs from `/Development/diy-cpu/simplified/ucode/bin` and output all resulting C++ files to `../controller/uc`.
+The `Makefile` in the [controller](../controller) project will automatically process the expected ROMs from `../diy-cpu/simplified/ucode/bin` and output all resulting C++ files to `../controller/uc`.
 
 
 

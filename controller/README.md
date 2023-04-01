@@ -2,33 +2,29 @@
 
 # Controller
 
-A μcontroller based control unit and debugger for the [Diy CPU](https://github.com/skagra/diy-cpu-meta).
+A μcontroller based control unit and debugger for the [DIY CPU](https://github.com/skagra/diy-cpu-meta).
 
 - [Controller](#controller)
 - [Functionality](#functionality)
 - [Circuit](#circuit)
 - [Control Lines](#control-lines)
-  - [ROM 1](#rom-1)
-  - [ROM 2](#rom-2)
-  - [ROM 3](#rom-3)
-  - [ROM 4](#rom-4)
 - [Glossary](#glossary)
 
 At its core the controller cycles through the following actions
 
 * `P0` - Fetch cycle.
   * Set the `MAR` to the current `PC`
-  * Read the corresponding mc opcode from the mc `ROM` into the `IR`.
+  * Read the corresponding machine code opcode from the program `ROM` into the `IR`.
 * `P1` - Addressing cycle.
-  * If this is the first μcode instruction in this phase then lookup the mc opcode in the addr decoding ROM to find the address of the appropriate `P1` μcode.
-  * *Execute* the current μcode instruction.
+  * If this is the first μcode instruction in this phase then lookup the machine code opcode in the address decoding ROM to find the address of the appropriate `P1` μcode and jump to it.
+  * <a href="#execute">*Execute*</a> the current μcode instruction.
   * If the current μcode instruction flags the end of the phase then move to `P2`, else continue.
 * `P2` - Function cycle.
-  * If this is the first μcode instruction in this phase then lookup the mc opcode in the function decoding ROM to find the address of the appropriate `P2` μcode.
-  * *Execute* the current μcode instruction.
+  * If this is the first μcode instruction in this phase then lookup the machine opcode in the opcode decoding ROM to find the address of the appropriate `P2` μcode and jump to it.
+  * <a href="#execute">*Execute*</a> the current μcode instruction.
   * If the current μcode instruction flags the end of the phase then move to P0, else continue.
 
-In this context to *execute* means to:
+In this context to <span name="execute">*execute*</span> means to:
 
 * Set control lines as per the current μcode instruction.
 * Pulse the clock.
