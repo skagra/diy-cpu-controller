@@ -16,11 +16,11 @@ At its core the controller cycles through the following actions
   * Set the `MAR` to the current `PC`
   * Read the corresponding machine code opcode from the program `ROM` into the `IR`.
 * `P1` - Addressing cycle.
-  * If this is the first μcode instruction in this phase then lookup the machine code opcode in the address decoding ROM to find the address of the appropriate `P1` μcode and jump to it.
+  * If this is the first μcode instruction in this phase then lookup the opcode held in the `IR` in the address decoding ROM to find the address of the appropriate `P1` μcode and jump to it.
   * <a href="#execute">*Execute*</a> the current μcode instruction.
   * If the current μcode instruction flags the end of the phase then move to `P2`, else continue.
 * `P2` - Function cycle.
-  * If this is the first μcode instruction in this phase then lookup the machine opcode in the opcode decoding ROM to find the address of the appropriate `P2` μcode and jump to it.
+  * If this is the first μcode instruction in this phase then lookup the opcode held in the `IR` in the opcode decoding ROM to find the address of the appropriate `P2` μcode and jump to it.
   * <a href="#execute">*Execute*</a> the current μcode instruction.
   * If the current μcode instruction flags the end of the phase then move to P0, else continue.
 
@@ -45,13 +45,13 @@ The controller presents an interface via a serial connection with the following 
 * s => Single step.
 * t => Test mode (continuous run)
 * b [XX] => Set/clear breakpoint.
-* d => Dump (report) state."
+* d => Dump (report) state.
 
 [Top](#top)
 
 # Circuit
 
-The circuit for the control unit is build around an Arduino (micro-controller) with the addition of four `74HC595` SIPO shift registers to extend the quantity of 
+The circuit for the control unit is build around an Arduino (ATmega328 μcontroller) with the addition of four `74HC595` SIPO shift registers to extend the quantity of 
 available outputs. 
 
 ![Schematic](docs/schematic.png)
@@ -60,7 +60,7 @@ Each of the shift registers is equivalent to one of the microcode ROMs in the co
 
 The schematic labels all control lines according to the key detailed below.
 
-In addition, the micro-controller directly takes as input the value of `PZ` and outputs a clock signal used by the CPU and surrounding circuitry.
+In addition, the μcontroller takes as input the value of zero flag `Z` from the *status register* (`P`) and outputs a clock signal used by the CPU and other circuitry.
 
 [Top](#top)
 
