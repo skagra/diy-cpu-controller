@@ -138,3 +138,6 @@ _NCrunch*
 [Bb]uild/
 .vscode/c_cpp_properties.json
 .vscode/arduino.json
+
+# Microcode files
+controller/uc
